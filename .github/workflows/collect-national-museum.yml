@@ -1,0 +1,60 @@
+name: Collect National Museum API Data
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/collect-national-museum.js"
+      - "config/apis.json"
+      - ".github/workflows/collect-national-museum.yml"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify API secret is configured
+        id: keycheck
+        env:
+          NATIONAL_MUSEUM_API_KEY: ${{ secrets.NATIONAL_MUSEUM_API_KEY }}
+        run: |
+          if [ -z "$NATIONAL_MUSEUM_API_KEY" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::error::NATIONAL_MUSEUM_API_KEY is missing."
+            exit 1
+          fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+      - name: Fetch and validate National Museum API
+        env:
+          NATIONAL_MUSEUM_API_KEY: ${{ secrets.NATIONAL_MUSEUM_API_KEY }}
+        run: node scripts/collect-national-museum.js
+      - name: Commit collected dataset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/programs.json
+          if git diff --cached --quiet; then
+            echo "Dataset unchanged."
+          else
+            git commit -m "Update National Museum API dataset"
+            git push
+          fi
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Deploy site
+        uses: actions/deploy-pages@v4
