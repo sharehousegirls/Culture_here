@@ -93,15 +93,37 @@ function normalize(x, i) {
   };
 }
 async function requestPage(pageNo) {
-  const url = new URL(ENDPOINT);
-  url.searchParams.set("serviceKey", API_KEY);
-  url.searchParams.set("numOfRows", String(PAGE_SIZE));
-  url.searchParams.set("pageNo", String(pageNo));
-  const response = await fetch(url, { headers: { Accept: "application/xml, application/json" }, signal: AbortSignal.timeout(30000) });
-  const text = await response.text();
-  if (!response.ok) throw new Error("HTTP " + response.status + " response: " + text.slice(0, 500));
-  const items = parseItems(text, response.headers.get("content-type") || "");
-  return { items, contentType: response.headers.get("content-type") || "", sample: text.slice(0, 400) };
+  // The provider's Swagger lists serviceKey, numOfRows and pageNo.
+  // A note on the page also mentions blank keyword parameters; test that variant if needed.
+  const candidates = [
+    { label: "basic-json", params: { numOfRows: String(PAGE_SIZE), pageNo: String(pageNo) }, accept: "application/json" },
+    { label: "blank-keyword-json", params: { numOfRows: String(PAGE_SIZE), pageNo: String(pageNo), keyword: "" }, accept: "application/json" },
+    { label: "blank-keyword-xml", params: { numOfRows: String(PAGE_SIZE), pageNo: String(pageNo), keyword: "" }, accept: "application/xml" }
+  ];
+  const failures = [];
+  for (const candidate of candidates) {
+    const url = new URL(ENDPOINT);
+    url.searchParams.set("serviceKey", API_KEY);
+    for (const [key, value] of Object.entries(candidate.params)) url.searchParams.set(key, value);
+    try {
+      const response = await fetch(url, { headers: { Accept: candidate.accept }, signal: AbortSignal.timeout(30000) });
+      const text = await response.text();
+      if (!response.ok) {
+        failures.push(candidate.label + ": HTTP " + response.status + " - " + text.slice(0, 300));
+        continue;
+      }
+      const items = parseItems(text, response.headers.get("content-type") || candidate.accept);
+      if (!items.length && pageNo === 1) {
+        failures.push(candidate.label + ": HTTP " + response.status + " but no item records parsed; body=" + text.slice(0, 300));
+        continue;
+      }
+      console.log("Request variant succeeded:", candidate.label, "HTTP", response.status);
+      return { items, contentType: response.headers.get("content-type") || candidate.accept, sample: text.slice(0, 300) };
+    } catch (error) {
+      failures.push(candidate.label + ": " + (error?.message || String(error)));
+    }
+  }
+  throw new Error("All API request variants failed. " + failures.join(" | "));
 }
 async function main() {
   if (!API_KEY) throw new Error("Missing GitHub secret NATIONAL_MUSEUM_API_KEY");
