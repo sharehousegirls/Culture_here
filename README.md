@@ -81,3 +81,8 @@ GitHub Actions를 Source로 사용하며 `.github/workflows/pages.yml`에서 배
 5. 실행 결과에서 수집 성공 여부를 확인한다. 성공 시 데이터 파일 커밋과 Pages 재배포가 자동 진행된다.
 
 인증키는 공개 저장소 코드에 넣지 않는다. 현재 API 수집 워크플로는 인증키가 없으면 수집을 건너뛰므로, 인증키 설정 전 웹사이트는 실데이터 대기 상태로 표시된다.
+
+
+## API 통합 관리
+
+API 목록과 인증키 관리 원칙은 [`docs/API_REGISTRY.md`](docs/API_REGISTRY.md) 및 [`config/apis.json`](config/apis.json)을 기준으로 한다. 실제 인증키는 저장소에 커밋하지 않으며 `.env.example`은 환경변수 이름만 제공한다.
