@@ -68,3 +68,16 @@ GitHub Actions를 Source로 사용하며 `.github/workflows/pages.yml`에서 배
 - API 키, 비밀번호, 개인정보, `.env` 파일을 Git에 커밋하지 않는다.
 - 브라우저에 노출되는 API 키는 비밀이 아니다. 민감한 키는 백엔드 또는 GitHub Actions Secrets 등 안전한 환경에서 관리한다.
 - 공개 저장소에 올리기 전 secrets와 로그를 검토한다.
+
+## 문화포털 API 자동 수집 설정
+
+현재 첫 실데이터 소스로 문화포털 문화정보 조회서비스를 연결하는 수집기와 6시간 주기 GitHub Actions 워크플로가 추가되어 있다. 수집기는 최근 30일~앞으로 180일 범위의 프로그램을 조회하고 `data/programs.json`으로 저장하며, 웹 화면은 해당 파일을 읽는다.
+
+### 최초 인증키 설정(필수)
+1. GitHub 저장소의 **Settings → Secrets and variables → Actions**로 이동한다.
+2. **New repository secret**을 선택한다.
+3. Name에 `CULTURE_PORTAL_API_KEY`, Secret에 문화포털 API 인증키를 입력한다.
+4. Actions → **Collect Culture Portal API Data** → **Run workflow**로 최초 실행한다.
+5. 실행 결과에서 수집 성공 여부를 확인한다. 성공 시 데이터 파일 커밋과 Pages 재배포가 자동 진행된다.
+
+인증키는 공개 저장소 코드에 넣지 않는다. 현재 API 수집 워크플로는 인증키가 없으면 수집을 건너뛰므로, 인증키 설정 전 웹사이트는 실데이터 대기 상태로 표시된다.
