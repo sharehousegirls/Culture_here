@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   collect:
@@ -46,3 +48,12 @@ jobs:
             git commit -m "Update Culture Portal API dataset"
             git push
           fi
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Deploy updated site
+        id: deployment
+        uses: actions/deploy-pages@v4
