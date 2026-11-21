@@ -36,14 +36,14 @@
     },
     {
       "id": "national-museum-events",
-      "name": "문화체육관광부_국립지방박물관 문화행사 통합정보",
-      "provider": "문화체육관광부",
-      "status": "key-issued-awaiting-endpoint-verification",
+      "name": "국립중앙박물관 외_국립지방박물관 문화행사 통합정보",
+      "provider": "국립중앙박물관",
+      "status": "implemented-awaiting-live-run",
       "scope": "unknown",
       "auth": "api-key",
       "secretName": "NATIONAL_MUSEUM_API_KEY",
       "enabled": true,
-      "notes": "Newly issued key. Official data.go.kr page lists API type as LINK and the visible page does not expose a request endpoint; endpoint and parameters must be verified before live testing. This is the only enabled API during current test."
+      "notes": "Verified endpoint: https://api.kcisa.kr/openapi/service/CNV/API_CNV_043/request. Only this API is enabled for current test. Live API response validation is pending workflow execution."
     },
     {
       "id": "national-library-recruitment",
