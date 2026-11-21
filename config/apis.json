@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "policy": "API-centric; region is query/data metadata, not an API management partition.",
+  "apis": [
+    {
+      "id": "culture-portal",
+      "name": "문화포털 문화정보 조회",
+      "provider": "문화포털 / 공공데이터포털",
+      "status": "application-pending",
+      "scope": "unknown",
+      "auth": "api-key",
+      "secretName": "CULTURE_PORTAL_API_KEY",
+      "enabled": true,
+      "notes": "Nationwide scope must be confirmed by live response; do not infer from region labels."
+    },
+    {
+      "id": "lifelong-learning-standard",
+      "name": "전국 평생학습강좌 표준데이터",
+      "provider": "공공데이터포털",
+      "status": "not-applied",
+      "scope": "unknown",
+      "auth": "api-key",
+      "secretName": "LIFELONG_LEARNING_API_KEY",
+      "enabled": false
+    },
+    {
+      "id": "ministry-affiliated-education",
+      "name": "문화부 소속 및 산하기관 교육정보 API",
+      "provider": "문화체육관광부 계열",
+      "status": "key-issued-record-needs-verification",
+      "scope": "unknown",
+      "auth": "api-key",
+      "secretName": "MINISTRY_EDUCATION_API_KEY",
+      "enabled": true,
+      "notes": "Prior record shows a Seoul test label; this is not proof that API data is Seoul-only."
+    },
+    {
+      "id": "national-museum-events",
+      "name": "국립박물관 문화행사 통합정보 API",
+      "provider": "국립박물관",
+      "status": "not-applied",
+      "scope": "unknown",
+      "auth": "api-key",
+      "secretName": "NATIONAL_MUSEUM_EVENTS_API_KEY",
+      "enabled": false
+    },
+    {
+      "id": "national-library-recruitment",
+      "name": "국립어린이청소년도서관 공개모집 API",
+      "provider": "국립어린이청소년도서관",
+      "status": "key-issued-record-needs-verification",
+      "scope": "unknown",
+      "auth": "api-key",
+      "secretName": "NATIONAL_LIBRARY_RECRUITMENT_API_KEY",
+      "enabled": true,
+      "notes": "Prior record includes region labels; verify API's actual query scope and response."
+    }
+  ]
+}
