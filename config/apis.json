@@ -10,7 +10,7 @@
       "scope": "unknown",
       "auth": "api-key",
       "secretName": "CULTURE_PORTAL_API_KEY",
-      "enabled": true,
+      "enabled": false,
       "notes": "Nationwide scope must be confirmed by live response; do not infer from region labels."
     },
     {
@@ -31,18 +31,19 @@
       "scope": "unknown",
       "auth": "api-key",
       "secretName": "MINISTRY_EDUCATION_API_KEY",
-      "enabled": true,
+      "enabled": false,
       "notes": "Prior record shows a Seoul test label; this is not proof that API data is Seoul-only."
     },
     {
       "id": "national-museum-events",
-      "name": "국립박물관 문화행사 통합정보 API",
-      "provider": "국립박물관",
-      "status": "not-applied",
+      "name": "문화체육관광부_국립지방박물관 문화행사 통합정보",
+      "provider": "문화체육관광부",
+      "status": "key-issued-awaiting-endpoint-verification",
       "scope": "unknown",
       "auth": "api-key",
-      "secretName": "NATIONAL_MUSEUM_EVENTS_API_KEY",
-      "enabled": false
+      "secretName": "NATIONAL_MUSEUM_API_KEY",
+      "enabled": true,
+      "notes": "Newly issued key. Official data.go.kr page lists API type as LINK and the visible page does not expose a request endpoint; endpoint and parameters must be verified before live testing. This is the only enabled API during current test."
     },
     {
       "id": "national-library-recruitment",
@@ -52,7 +53,7 @@
       "scope": "unknown",
       "auth": "api-key",
       "secretName": "NATIONAL_LIBRARY_RECRUITMENT_API_KEY",
-      "enabled": true,
+      "enabled": false,
       "notes": "Prior record includes region labels; verify API's actual query scope and response."
     }
   ]
