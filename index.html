@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="서울의 문화·교육·체험 프로그램을 한곳에서 찾는 Culture Here">
-  <title>Culture Here — 서울의 프로그램을 발견하다</title>
+  <meta name="description" content="전국의 문화·교육·체험 프로그램을 한곳에서 찾는 Culture Here">
+  <title>Culture Here — 가까운 문화와 배움을 발견하다</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="./"><span class="brand-mark">C</span><span>Culture <b>Here</b></span></a>
-    <div class="topbar-right"><span class="region-pill"><span class="dot"></span> 서울 한정 베타</span></div>
+    <div class="topbar-right"><span class="region-pill"><span class="dot"></span> 전국 문화·교육 프로그램</span></div>
   </header>
   <main>
     <section class="hero">
       <div class="hero-inner">
         <p class="eyebrow">YOUR CULTURE, YOUR CITY</p>
-        <h1>오늘, 서울에서<br><em>새로운 경험을</em> 발견하세요.</h1>
-        <p class="hero-copy">도서관부터 문화센터, 박물관까지 흩어진 교육·문화 프로그램을 한곳에서 찾아보세요.</p>
+        <h1>오늘, 가까운 곳에서<br><em>새로운 경험을</em> 발견하세요.</h1>
+        <p class="hero-copy">전국 도서관, 문화센터, 박물관 등에 흩어진 교육·문화 프로그램을 한곳에서 찾아보세요.</p>
         <div class="search-wrap">
           <span class="search-icon" aria-hidden="true">⌕</span>
           <input id="keyword" type="search" placeholder="어떤 프로그램을 찾으세요? 예: 드로잉, AI, 독서" aria-label="프로그램 검색">
@@ -32,7 +32,7 @@
         <label>분야<select id="category"><option value="">전체 분야</option><option>교육</option><option>문화예술</option><option>독서</option><option>체험</option><option>공연·전시</option><option>청소년</option></select></label>
         <label>대상<select id="audience"><option value="">전체 대상</option><option>어린이</option><option>청소년</option><option>성인</option><option>가족</option><option>누구나</option></select></label>
         <label>비용<select id="fee"><option value="">전체</option><option value="무료">무료</option><option value="유료">유료</option></select></label>
-        <label>지역<select id="district"><option value="">서울 전체</option><option>강남구</option><option>강동구</option><option>강북구</option><option>강서구</option><option>관악구</option><option>광진구</option><option>구로구</option><option>금천구</option><option>노원구</option><option>도봉구</option><option>동대문구</option><option>동작구</option><option>마포구</option><option>서대문구</option><option>서초구</option><option>성동구</option><option>성북구</option><option>송파구</option><option>양천구</option><option>영등포구</option><option>용산구</option><option>은평구</option><option>종로구</option><option>중구</option><option>중랑구</option></select></label>
+        <label>지역<select id="district"><option value="">전체 지역 (현재 예시 데이터: 서울)</option><option>강남구</option><option>강동구</option><option>강북구</option><option>강서구</option><option>관악구</option><option>광진구</option><option>구로구</option><option>금천구</option><option>노원구</option><option>도봉구</option><option>동대문구</option><option>동작구</option><option>마포구</option><option>서대문구</option><option>서초구</option><option>성동구</option><option>성북구</option><option>송파구</option><option>양천구</option><option>영등포구</option><option>용산구</option><option>은평구</option><option>종로구</option><option>중구</option><option>중랑구</option></select></label>
         <button id="reset" class="reset-button">초기화</button>
       </div>
       <div class="program-grid" id="programGrid" aria-live="polite"></div>
@@ -40,7 +40,7 @@
       <p class="demo-note">현재 표시되는 프로그램은 화면·검색 기능 확인을 위한 예시 데이터입니다. 실제 모집 정보가 아닙니다.</p>
     </section>
   </main>
-  <footer><div class="footer-brand">Culture Here</div><p>서울의 문화와 배움을 더 쉽게 발견하는 곳.</p><small>Prototype · 데이터 연동 준비 중</small></footer>
+  <footer><div class="footer-brand">Culture Here</div><p>전국의 문화와 배움을 더 쉽게 발견하는 곳.</p><small>Prototype · 데이터 연동 준비 중</small></footer>
   <dialog id="detailDialog"><button class="dialog-close" id="closeDialog" aria-label="닫기">×</button><div id="detailContent"></div></dialog>
   <script src="./app.js"></script>
 </body>
