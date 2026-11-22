@@ -9,6 +9,10 @@ on:
       - "config/apis.json"
       - ".github/workflows/collect-national-museum.yml"
 
+concurrency:
+  group: national-museum-collector
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pages: write
