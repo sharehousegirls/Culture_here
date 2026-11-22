@@ -17,6 +17,8 @@ jobs:
         run: |
           node --check app.js
           node --check scripts/collect-culture-portal.js
+          node --check scripts/collect-national-museum.js
+          node --test scripts/collect-national-museum.test.js
       - name: Required files
         run: |
           test -f index.html
@@ -24,4 +26,6 @@ jobs:
           test -f app.js
           test -f api.js
           test -f scripts/collect-culture-portal.js
+          test -f scripts/collect-national-museum.js
+          test -f scripts/collect-national-museum.test.js
           test -f README.md
