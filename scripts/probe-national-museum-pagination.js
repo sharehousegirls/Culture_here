@@ -52,6 +52,7 @@ async function probe(pageNo, numOfRows) {
     return {
       requested: { pageNo, numOfRows },
       httpStatus: response.status,
+      responseBytes: Buffer.byteLength(text, "utf8"),
       contentType,
       elapsedMs: Date.now() - started,
       parsedAsJson: Boolean(json),
@@ -77,6 +78,7 @@ async function main() {
   probes.push(await probe(1, 1000));
   probes.push(await probe(69, 1000));
   probes.push(await probe(116, 1000));
+  probes.push(await probe(295, 1000));
   const byFingerprint = new Map();
   for (const result of probes) {
     if (!result.fingerprint) continue;
