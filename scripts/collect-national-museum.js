@@ -6,7 +6,6 @@ const API_KEY = process.env.NATIONAL_MUSEUM_API_KEY;
 const ENDPOINT = "https://api.kcisa.kr/openapi/service/CNV/API_CNV_043/request";
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 300;
-const TAIL_FALLBACK_SIZE = 100;
 const MAX_OUTPUT_BYTES = 90 * 1024 * 1024;
 const SOURCE = "국립지방박물관 문화행사 통합정보";
 const PAST_DAYS = 30;
@@ -150,7 +149,7 @@ function trackPage(page,pageNo,pageSize,fingerprints,counts) {
 }
 function fallbackPageRange(offset,totalCount,pageSize) {
   if(!Number.isInteger(offset)||!Number.isInteger(totalCount)||!Number.isInteger(pageSize)||offset<0||totalCount<offset||pageSize<=0) throw new Error("Invalid fallback pagination arguments.");
-  if(offset%pageSize!==0) throw new Error("Fallback page size "+pageSize+" cannot align to offset "+offset;+" refusing to skip or overlap records.");
+  if(offset%pageSize!==0) throw new Error("Fallback page size "+pageSize+" cannot align to offset "+offset+"; refusing to skip or overlap records.");
   return {firstPage:offset/pageSize+1,lastPage:Math.ceil(totalCount/pageSize)};
 }
 async function fetchFallbackTail(offset,totalCount) {
