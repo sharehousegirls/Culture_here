@@ -13,8 +13,16 @@
 | culture-portal | 문화포털 문화정보 조회 | 신청/승인 상태 재확인 | unknown | CULTURE_PORTAL_API_KEY |
 | lifelong-learning-standard | 전국 평생학습강좌 표준데이터 | 미신청 | unknown | LIFELONG_LEARNING_API_KEY |
 | ministry-affiliated-education | 문화부 소속 및 산하기관 교육정보 API | 키 발급 기록, 검증 필요 | unknown | MINISTRY_EDUCATION_API_KEY |
-| national-museum-events | 국립박물관 문화행사 통합정보 API | 미신청 | unknown | NATIONAL_MUSEUM_EVENTS_API_KEY |
+| national-museum-events | 국립박물관 문화행사 통합정보 API | 실 수집 검증 성공; 데이터 게시 대기 | unknown | NATIONAL_MUSEUM_API_KEY |
 | national-library-recruitment | 국립어린이청소년도서관 공개모집 API | 키 발급 기록, 검증 필요 | unknown | NATIONAL_LIBRARY_RECRUITMENT_API_KEY |
+
+## 실 API 검증 결과 (2026-11-22)
+- `national-museum-events`: HTTP 200, JSON `resultCode=0000`; `totalCount` 294,499, 전체 294,499건 수집.
+- 1,000-row 페이지에서 raw offset 291,000에 HTTP 504가 발생했으나 100-row tail fallback 35페이지/3,499건으로 복구.
+- 13,890 unique records, 280,606 duplicates removed (95.28%), 181 duplicate-page fingerprints.
+- 날짜 범위 2026-10-23..2027-05-21에서 12개 프로그램; 지역 분포 경북 2, 대구 6, 충북 4; 지역 누락 0.
+- 12개 프로그램 모두 비용 및 이미지 필드 누락. 전체 수집 데이터 생성은 성공했으나 dataset push가 non-fast-forward로 거절되어 공개 데이터 파일 통합은 미완료.
+- 조회 범위(scope)는 12개 프로그램/3개 지역의 결과만으로 확정하지 않고 `unknown` 유지. 다른 API는 테스트하지 않음.
 
 ## API 키 확인 상태
 - 채팅/스크린샷에 전달된 키 값은 공개 저장소에 기록하지 않는다.

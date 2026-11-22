@@ -39,7 +39,47 @@ jobs:
         env:
           NATIONAL_MUSEUM_API_KEY: ${{ secrets.NATIONAL_MUSEUM_API_KEY }}
         run: node scripts/collect-national-museum.js
-      - name: Commit collected dataset
+      - name: Validate normalized dataset
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const fail = (message) => { console.error("::error::" + message); process.exit(1); };
+          const data = JSON.parse(fs.readFileSync("data/programs.json", "utf8"));
+          const programs = data.programs;
+          if (!Array.isArray(programs)) fail("Dataset programs must be an array.");
+          if (data.paginationComplete !== true) fail("Pagination is not marked complete.");
+          if (Number(data.totalFetched) !== Number(data.reportedTotalCount)) fail("Fetched count does not match API totalCount.");
+          if (Number(data.count) !== programs.length) fail("Dataset count does not match programs array.");
+          const ids = new Set(), sourceIds = new Set();
+          const allowed = new Set(["서울","부산","대구","인천","광주","대전","울산","세종","경기","강원","충북","충남","전북","전남","경북","경남","제주","지역미확인"]);
+          const distribution = {};
+          for (const p of programs) {
+            if (!p.id || ids.has(p.id)) fail("Missing or duplicate program id.");
+            ids.add(p.id);
+            if (!p.sourceId || sourceIds.has(p.sourceId)) fail("Missing or duplicate sourceId.");
+            sourceIds.add(p.sourceId);
+            const region = p.region || "지역미확인";
+            if (!allowed.has(region)) fail("Unknown region code: " + region);
+            distribution[region] = (distribution[region] || 0) + 1;
+            if (p.startDate && p.endDate && p.startDate > p.endDate) fail("Invalid program date range for " + p.id);
+          }
+          const sortObj = (o) => JSON.stringify(Object.fromEntries(Object.entries(o || {}).sort(([a],[b])=>a.localeCompare(b))));
+          if (sortObj(distribution) !== sortObj(data.regionalDistribution)) fail("Regional distribution metadata does not match program records.");
+          const missingRegion = programs.filter(p => !p.region).length;
+          if (Number(data.missingFields?.region) !== missingRegion) fail("Missing-region count does not match records.");
+          const duplicateRate = Number(data.duplicateRecordsRemoved || 0) / Math.max(1, Number(data.totalFetched || 0));
+          console.log("Dataset validated:", JSON.stringify({fetched:data.totalFetched,reportedTotal:data.reportedTotalCount,published:programs.length,uniqueSourceIds:sourceIds.size,missingRegion,regionalDistribution:distribution,missingFields:data.missingFields,duplicateRate:Number(duplicateRate.toFixed(4))}));
+          console.log("Sample record:", JSON.stringify(programs[0] ? {title:programs[0].title,organization:programs[0].organization,region:programs[0].region,startDate:programs[0].startDate,endDate:programs[0].endDate} : null));
+          if (duplicateRate > 0.9) console.warn("::warning::Source duplicate rate exceeds 90%; duplicates were removed but upstream data quality needs review.");
+          NODE
+      - name: Archive verified dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: national-museum-dataset-${{ github.run_id }}
+          path: data/programs.json
+          if-no-files-found: error
+          retention-days: 3
+      - name: Commit collected dataset (retry concurrent pushes)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -48,7 +88,22 @@ jobs:
             echo "Dataset unchanged."
           else
             git commit -m "Update National Museum API dataset"
-            git push
+            for attempt in 1 2 3 4; do
+              git fetch origin main
+              if ! git rebase origin/main; then
+                git rebase --abort || true
+                echo "::error::Dataset commit conflicted with main; no push performed."
+                exit 1
+              fi
+              if git push origin HEAD:main; then
+                echo "Dataset pushed successfully on attempt $attempt."
+                exit 0
+              fi
+              echo "::warning::Push attempt $attempt failed; refreshing and retrying."
+              sleep $((attempt * 2))
+            done
+            echo "::error::Dataset push failed after 4 attempts."
+            exit 1
           fi
       - name: Configure Pages
         uses: actions/configure-pages@v5

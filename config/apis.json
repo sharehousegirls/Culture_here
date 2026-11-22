@@ -38,12 +38,12 @@
       "id": "national-museum-events",
       "name": "국립중앙박물관 외_국립지방박물관 문화행사 통합정보",
       "provider": "국립중앙박물관",
-      "status": "implemented-awaiting-live-run",
+      "status": "live-verified-awaiting-publish",
       "scope": "unknown",
       "auth": "api-key",
       "secretName": "NATIONAL_MUSEUM_API_KEY",
       "enabled": true,
-      "notes": "Verified endpoint: https://api.kcisa.kr/openapi/service/CNV/API_CNV_043/request. Only this API is enabled for current test. Live API response validation is pending workflow execution."
+      "notes": "Live validation on 2026-11-22: HTTP 200 JSON resultCode 0000; fetched 294499/294499 records. A 1000-row page timed out with HTTP 504 at raw offset 291000 and was recovered using 100-row tail pages (35 pages/3499 rows). 13890 unique records; 280606 duplicate records removed (95.28%); 181 duplicate page fingerprints. 12 programs in the 2026-10-23..2027-05-21 window; region distribution 경북 2, 대구 6, 충북 4, no missing regions. All 12 lack fee and image fields. Dataset commit was rejected by non-fast-forward; publication pending. Only this API is enabled."
     },
     {
       "id": "national-library-recruitment",
