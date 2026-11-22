@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 const API_KEY = process.env.NATIONAL_MUSEUM_API_KEY;
 const ENDPOINT = "https://api.kcisa.kr/openapi/service/CNV/API_CNV_043/request";
-const PAGE_NUMBERS = [1, 2, 115, 116, 117, 200, 500, 1000, 2945];
+const PAGE_NUMBERS = [65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 115, 116, 117, 118];
 
 function itemsFromJson(json) {
   const root = json?.response ?? json;
@@ -75,6 +75,8 @@ async function main() {
   const probes = [];
   for (const pageNo of PAGE_NUMBERS) probes.push(await probe(pageNo, 100));
   probes.push(await probe(1, 1000));
+  probes.push(await probe(69, 1000));
+  probes.push(await probe(116, 1000));
   const byFingerprint = new Map();
   for (const result of probes) {
     if (!result.fingerprint) continue;
