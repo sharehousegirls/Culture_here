@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { pathToFileURL } from "node:url";
 
 const API_KEY = process.env.NATIONAL_MUSEUM_API_KEY;
 const ENDPOINT = "https://api.kcisa.kr/openapi/service/CNV/API_CNV_043/request";
@@ -47,12 +48,42 @@ function parseResponse(text, contentType) {
   if (resultCode && !accepted.includes(resultCode)) throw new Error("API result code " + resultCode + ": " + resultMsg);
   return { items: parseXmlItems(text), totalCount: toNumber(xmlTag(text, "totalCount")), pageNo: toNumber(xmlTag(text, "pageNo")), numOfRows: toNumber(xmlTag(text, "numOfRows")), resultCode, resultMsg };
 }
-function regionFromCoverage(coverage, museum) {
-  const text = (coverage + " " + museum).replace(/\s/g, "");
-  const map = [["국립중앙박물관","서울"],["국립춘천박물관","강원"],["국립경주박물관","경북"],["국립대구박물관","대구"],["국립진주박물관","경남"],["국립청주박물관","충북"],["국립공주박물관","충남"],["국립부여박물관","충남"],["국립전주박물관","전북"],["국립제주박물관","제주"],["국립광주박물관","광주"],["국립익산박물관","전북"],["국립김해박물관","경남"],["국립나주박물관","전남"]];
-  for (const [name, region] of map) if (text.includes(name)) return region;
-  const provinces = ["서울","부산","대구","인천","광주","대전","울산","세종","경기","강원","충북","충남","전북","전남","경북","경남","제주"];
-  return provinces.find(r => text.includes(r)) || "";
+function regionFromText(value) {
+  const text=String(value||"").replace(/\s/g,"");
+  const aliases=[
+    ["서울특별시","서울"],["서울시","서울"],["서울","서울"],
+    ["부산광역시","부산"],["부산시","부산"],["부산","부산"],
+    ["대구광역시","대구"],["대구시","대구"],["대구","대구"],
+    ["인천광역시","인천"],["인천시","인천"],["인천","인천"],
+    ["광주광역시","광주"],["광주시","광주"],["광주","광주"],
+    ["대전광역시","대전"],["대전시","대전"],["대전","대전"],
+    ["울산광역시","울산"],["울산시","울산"],["울산","울산"],
+    ["세종특별자치시","세종"],["세종시","세종"],["세종","세종"],
+    ["경기도","경기"],["경기","경기"],
+    ["강원특별자치도","강원"],["강원도","강원"],["강원","강원"],
+    ["충청북도","충북"],["충북","충북"],
+    ["충청남도","충남"],["충남","충남"],
+    ["전북특별자치도","전북"],["전라북도","전북"],["전북","전북"],
+    ["전라남도","전남"],["전남","전남"],
+    ["경상북도","경북"],["경북","경북"],
+    ["경상남도","경남"],["경남","경남"],
+    ["제주특별자치도","제주"],["제주도","제주"],["제주","제주"]
+  ];
+  return aliases.find(([name])=>text.includes(name))?.[1]||"";
+}
+function regionFromMuseumName(value) {
+  const museum=String(value||"").replace(/\s/g,"");
+  const map=[
+    ["국립중앙박물관","서울"],["국립춘천박물관","강원"],["국립경주박물관","경북"],["국립대구박물관","대구"],["국립진주박물관","경남"],["국립청주박물관","충북"],["국립공주박물관","충남"],["국립부여박물관","충남"],["국립전주박물관","전북"],["국립제주박물관","제주"],["국립광주박물관","광주"],["국립익산박물관","전북"],["국립김해박물관","경남"],["국립나주박물관","전남"]
+  ];
+  return map.find(([name])=>museum.includes(name))?.[1]||"";
+}
+function regionFromCoverage(coverage,museum) {
+  const siteRegion=regionFromText(coverage);
+  if(siteRegion) return siteRegion;
+  const siteMuseumRegion=regionFromMuseumName(coverage);
+  if(siteMuseumRegion) return siteMuseumRegion;
+  return regionFromMuseumName(museum)||regionFromText(museum);
 }
 function parsePeriod(period) {
   const matches = [...String(period || "").matchAll(/(20\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/g)];
@@ -108,14 +139,42 @@ async function requestPage(pageNo,numOfRows) {
   }
   throw lastError;
 }
-function trackPage(page,pageNo,pageSize,fingerprints) {
+function trackPage(page,pageNo,pageSize,fingerprints,counts) {
   if(!page.items.length) return;
   const fingerprint=hashPage(page.items), key=pageSize+":"+fingerprint, prior=fingerprints.get(key);
   if(prior) {
     if(prior.pageNo===pageNo-1) throw new Error("Consecutive duplicate page content detected at page "+pageNo+" (page size "+pageSize+"); refusing to publish incomplete data.");
+    counts.duplicatePages++;
     console.warn("NONCONSECUTIVE DUPLICATE PAGE CONTENT:",JSON.stringify({pageNo,pageSize,firstSeenPage:prior.pageNo,fingerprint,action:"continue; record-level deduplication will remove duplicates"}));
   } else fingerprints.set(key,{pageNo,pageSize});
 }
+function fallbackPageRange(offset,totalCount,pageSize) {
+  if(!Number.isInteger(offset)||!Number.isInteger(totalCount)||!Number.isInteger(pageSize)||offset<0||totalCount<offset||pageSize<=0) throw new Error("Invalid fallback pagination arguments.");
+  if(offset%pageSize!==0) throw new Error("Fallback page size "+pageSize+" cannot align to offset "+offset;+" refusing to skip or overlap records.");
+  return {firstPage:offset/pageSize+1,lastPage:Math.ceil(totalCount/pageSize)};
+}
+async function fetchFallbackTail(offset,totalCount) {
+  const failures=[];
+  for(const pageSize of [100,50,25]) {
+    try {
+      const range=fallbackPageRange(offset,totalCount,pageSize), pages=[];
+      for(let pageNo=range.firstPage;pageNo<=range.lastPage;pageNo++) {
+        const page=await requestPage(pageNo,pageSize);
+        if(page.totalCount!==null&&page.totalCount!==totalCount) throw new Error("totalCount changed during fallback.");
+        const expected=Math.min(pageSize,totalCount-(pageNo-1)*pageSize);
+        if(page.items.length!==expected) throw new Error("Expected "+expected+" records at page "+pageNo+" but received "+page.items.length+".");
+        pages.push({pageNo,pageSize,page});
+      }
+      console.log("TAIL FALLBACK SUCCESS:",JSON.stringify({offset,pageSize,pages:pages.length,records:pages.reduce((n,p)=>n+p.page.items.length,0)}));
+      return pages;
+    } catch(error) {
+      failures.push(pageSize+"-row fallback: "+error.message);
+      console.warn("TAIL FALLBACK SIZE FAILED:",pageSize,error.message);
+    }
+  }
+  throw new Error("Tail fallback failed at offset "+offset+" for totalCount "+totalCount+". "+failures.join(" | "));
+}
+
 function overlapsWindow(program,windowStart,windowEnd) {
   if(!program.startDate||!program.endDate) return null;
   return program.endDate>=windowStart&&program.startDate<=windowEnd;
@@ -135,36 +194,33 @@ function processItems(items,counts,seen,programs,windowStart,windowEnd) {
 async function main() {
   if(!API_KEY) throw new Error("Missing GitHub secret NATIONAL_MUSEUM_API_KEY");
   const now=new Date(), today=now.toISOString().slice(0,10), windowStart=dateShift(today,-PAST_DAYS), windowEnd=dateShift(today,FUTURE_DAYS);
-  const counts={totalFetched:0,uniqueRecords:0,duplicatesRemoved:0,missingTitle:0,unknownDate:0,outsideWindow:0,pagesFetched:0};
+  const counts={totalFetched:0,uniqueRecords:0,duplicatesRemoved:0,duplicatePages:0,missingTitle:0,unknownDate:0,outsideWindow:0,pagesFetched:0};
   const seen=new Set(), programs=[], fingerprints=new Map();
   let pageNo=1,totalCount=null,contentType="",paginationComplete=false;
   while(pageNo<=MAX_PAGES) {
     let page;
     try { page=await requestPage(pageNo,PAGE_SIZE); }
     catch(error) {
-      const expectedPages=totalCount===null?null:Math.ceil(totalCount/PAGE_SIZE);
-      if(pageNo===expectedPages&&totalCount!==null) {
-        console.warn("Large final page failed; falling back to 100-row tail pages:",error.message);
-        const firstTailPage=Math.floor(((pageNo-1)*PAGE_SIZE)/TAIL_FALLBACK_SIZE)+1, lastTailPage=Math.ceil(totalCount/TAIL_FALLBACK_SIZE);
-        for(let tailPageNo=firstTailPage;tailPageNo<=lastTailPage;tailPageNo++) {
-          const tail=await requestPage(tailPageNo,TAIL_FALLBACK_SIZE);
-          if(tail.totalCount!==null&&tail.totalCount!==totalCount) throw new Error("API totalCount changed during tail fallback; refusing to publish.");
-          trackPage(tail,tailPageNo,TAIL_FALLBACK_SIZE,fingerprints);
-          counts.totalFetched+=tail.items.length; counts.pagesFetched++;
-          processItems(tail.items,counts,seen,programs,windowStart,windowEnd);
-          console.log("Tail fallback page",tailPageNo,"rows",tail.items.length,"total fetched",counts.totalFetched);
-        }
-        paginationComplete=counts.totalFetched>=totalCount;
-        break;
+      if(totalCount===null) throw error;
+      const offset=(pageNo-1)*PAGE_SIZE;
+      if(counts.totalFetched!==offset) throw new Error("Fallback offset mismatch: fetched "+counts.totalFetched+" rows but next page implies offset "+offset+". Original error: "+error.message);
+      console.warn("Primary page failed; switching to smaller pages from raw offset",offset,error.message);
+      const tailPages=await fetchFallbackTail(offset,totalCount);
+      for(const tail of tailPages) {
+        trackPage(tail.page,tail.pageNo,tail.pageSize,fingerprints,counts);
+        counts.totalFetched+=tail.page.items.length; counts.pagesFetched++;
+        processItems(tail.page.items,counts,seen,programs,windowStart,windowEnd);
       }
-      throw error;
+      paginationComplete=counts.totalFetched===totalCount;
+      if(!paginationComplete) throw new Error("Fallback fetched "+counts.totalFetched+" of "+totalCount+" rows; refusing to publish.");
+      break;
     }
     contentType=page.contentType;
     if(page.totalCount!==null) {
       if(totalCount===null) totalCount=page.totalCount;
       else if(page.totalCount!==totalCount) throw new Error("API totalCount changed from "+totalCount+" to "+page.totalCount+"; refusing to publish mixed snapshot.");
     }
-    trackPage(page,pageNo,PAGE_SIZE,fingerprints);
+    trackPage(page,pageNo,PAGE_SIZE,fingerprints,counts);
     counts.totalFetched+=page.items.length; counts.pagesFetched++;
     processItems(page.items,counts,seen,programs,windowStart,windowEnd);
     console.log("Page",pageNo,"rows",page.items.length,"reported totalCount",totalCount??"unknown","total fetched",counts.totalFetched);
@@ -177,7 +233,7 @@ async function main() {
   if(totalCount!==null&&counts.totalFetched<totalCount) throw new Error("Pagination incomplete ("+counts.totalFetched+"/"+totalCount+"); dataset was not overwritten.");
   const regional=Object.fromEntries([...new Set(programs.map(p=>p.region||"지역미확인"))].map(r=>[r,programs.filter(p=>(p.region||"지역미확인")===r).length]));
   const missing=Object.fromEntries(["description","region","startDate","endDate","fee","imageUrl","detailUrl"].map(field=>[field,programs.filter(p=>!p[field]).length]));
-  const payload={generatedAt:now.toISOString(),source:SOURCE,endpoint:ENDPOINT,responseContentType:contentType,totalFetched:counts.totalFetched,reportedTotalCount:totalCount,paginationComplete:true,pagesFetched:counts.pagesFetched,uniqueRecords:counts.uniqueRecords,count:programs.length,duplicateRecordsRemoved:counts.duplicatesRemoved,filterWindow:{startDate:windowStart,endDate:windowEnd,includeUnknownDates:false},filteredOut:{missingTitle:counts.missingTitle,unknownDate:counts.unknownDate,outsideWindow:counts.outsideWindow},regionalDistribution:regional,missingFields:missing,programs};
+  const payload={generatedAt:now.toISOString(),source:SOURCE,endpoint:ENDPOINT,responseContentType:contentType,totalFetched:counts.totalFetched,reportedTotalCount:totalCount,paginationComplete:true,pagesFetched:counts.pagesFetched,uniqueRecords:counts.uniqueRecords,count:programs.length,duplicateRecordsRemoved:counts.duplicatesRemoved,duplicatePages:counts.duplicatePages,filterWindow:{startDate:windowStart,endDate:windowEnd,includeUnknownDates:false},filteredOut:{missingTitle:counts.missingTitle,unknownDate:counts.unknownDate,outsideWindow:counts.outsideWindow},regionalDistribution:regional,missingFields:missing,programs};
   const output=JSON.stringify(payload,null,2), outputBytes=Buffer.byteLength(output,"utf8");
   if(outputBytes>MAX_OUTPUT_BYTES) throw new Error("Filtered output size "+outputBytes+" exceeds safe 90 MiB limit; dataset was not overwritten.");
   await fs.mkdir("data",{recursive:true}); await fs.writeFile("data/programs.json",output);
@@ -188,4 +244,7 @@ async function main() {
   console.log("Missing fields:",JSON.stringify(missing));
   console.log("Sample record:",JSON.stringify(programs[0]?{title:programs[0].title,organization:programs[0].organization,region:programs[0].region,startDate:programs[0].startDate,endDate:programs[0].endDate,detailUrl:programs[0].detailUrl}:null));
 }
-main().catch(error=>{console.error("API TEST FAILED:",error.message);process.exit(1);});
+export { fallbackPageRange, regionFromText, regionFromCoverage };
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  main().catch(error=>{console.error("API TEST FAILED:",error.message);process.exit(1);});
+}
