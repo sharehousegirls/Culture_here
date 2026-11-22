@@ -1,0 +1,33 @@
+name: Probe National Museum API Pagination
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/probe-national-museum-pagination.js"
+      - ".github/workflows/probe-national-museum-pagination.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify secret exists
+        env:
+          NATIONAL_MUSEUM_API_KEY: ${{ secrets.NATIONAL_MUSEUM_API_KEY }}
+        run: |
+          if [ -z "$NATIONAL_MUSEUM_API_KEY" ]; then
+            echo "::error::NATIONAL_MUSEUM_API_KEY is missing."
+            exit 1
+          fi
+      - name: Probe selected pagination offsets and page size
+        env:
+          NATIONAL_MUSEUM_API_KEY: ${{ secrets.NATIONAL_MUSEUM_API_KEY }}
+        run: node scripts/probe-national-museum-pagination.js
