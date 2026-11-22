@@ -25,7 +25,7 @@ function xmlTag(xml, tag) {
   return match ? decodeXml(match[1]) : "";
 }
 function parseXmlItems(xml) {
-  return [...xml.matchAll(/<item(?:\\s[^>]*)?>([\\s\\S]*?)<\\/item>/gi)].map(m => {
+   return [...xml.matchAll(/<item(?:\s[^>]*)?>([\s\S]*?)<\/item>/gi)].map(m => {
     const block = m[1], fields = {};
     for (const name of ["publisher","collectionDb","creater","title","sourceTitle","sourceAgency","collectedDate","description","localId","url","subDescription","viewCount","imageObject","videoObject","spatialCoverage","eventSite","type","audience","charge","contactPoint","period","sizing"]) fields[name] = xmlTag(block, name);
     return fields;
@@ -48,14 +48,14 @@ function parseResponse(text, contentType) {
   return { items: parseXmlItems(text), totalCount: toNumber(xmlTag(text, "totalCount")), pageNo: toNumber(xmlTag(text, "pageNo")), numOfRows: toNumber(xmlTag(text, "numOfRows")), resultCode, resultMsg };
 }
 function regionFromCoverage(coverage, museum) {
-  const text = (coverage + " " + museum).replace(/\\s/g, "");
+  const text = (coverage + " " + museum).replace(/\s/g, "");
   const map = [["국립중앙박물관","서울"],["국립춘천박물관","강원"],["국립경주박물관","경북"],["국립대구박물관","대구"],["국립진주박물관","경남"],["국립청주박물관","충북"],["국립공주박물관","충남"],["국립부여박물관","충남"],["국립전주박물관","전북"],["국립제주박물관","제주"],["국립광주박물관","광주"],["국립익산박물관","전북"],["국립김해박물관","경남"],["국립나주박물관","전남"]];
   for (const [name, region] of map) if (text.includes(name)) return region;
   const provinces = ["서울","부산","대구","인천","광주","대전","울산","세종","경기","강원","충북","충남","전북","전남","경북","경남","제주"];
   return provinces.find(r => text.includes(r)) || "";
 }
 function parsePeriod(period) {
-  const matches = [...String(period || "").matchAll(/(20\\d{2})\\s*[-./]\\s*(\\d{1,2})\\s*[-./]\\s*(\\d{1,2})/g)];
+  const matches = [...String(period || "").matchAll(/(20\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/g)];
   const format = m => {
     if (!m) return "";
     const year=Number(m[1]), month=Number(m[2]), day=Number(m[3]);
@@ -72,7 +72,7 @@ function normalize(x) {
   const stableKey=x.localId||x.url||[x.title||"",museum,x.period||"",x.sourceAgency||"",x.collectedDate||""].join("|");
   const id=x.localId ? "museum-"+x.localId : "museum-"+createHash("sha1").update(stableKey).digest("hex");
   return {
-    id,title:x.title||"",category:x.type||"박물관 문화행사",description:[x.description,x.subDescription].filter(Boolean).join("\\n"),
+    id,title:x.title||"",category:x.type||"박물관 문화행사",description:[x.description,x.subDescription].filter(Boolean).join("\n"),
     organization:museum,region:regionFromCoverage(place,museum),district:"",address:place,latitude:null,longitude:null,
     startDate:periodDates.startDate,endDate:periodDates.endDate,applicationStart:"",applicationEnd:"",
     fee:x.charge||"",imageUrl:x.imageObject||"",detailUrl:x.url||"",applicationUrl:"",
@@ -82,7 +82,7 @@ function normalize(x) {
 }
 function hashPage(items) {
   const keys=items.map(x=>x.localId||x.url||[x.title||"",x.creater||"",x.period||""].join("|"));
-  return createHash("sha256").update(keys.join("\\n")).digest("hex").slice(0,16);
+  return createHash("sha256").update(keys.join("\n")).digest("hex").slice(0,16);
 }
 function dateShift(date, days) {
   const d=new Date(date+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+days); return d.toISOString().slice(0,10);
@@ -94,7 +94,7 @@ async function requestPage(pageNo,numOfRows) {
     try {
       const response=await fetch(url,{headers:{Accept:"application/json"},signal:AbortSignal.timeout(30000)});
       const text=await response.text();
-      if(!response.ok) throw new Error("HTTP "+response.status+" response: "+text.slice(0,250).replace(/[\\r\\n\\t]+/g," "));
+       if(!response.ok) throw new Error("HTTP "+response.status+" response: "+text.slice(0,250).replace(/[\r\n\t]+/g," "));
       const parsed=parseResponse(text,response.headers.get("content-type")||"application/json");
       if(parsed.resultCode&&!["0000","INFO-0","00","0","NORMAL_CODE"].includes(String(parsed.resultCode))) throw new Error("API result code "+parsed.resultCode+": "+parsed.resultMsg);
       if(parsed.pageNo!==null&&parsed.pageNo!==pageNo) throw new Error("Pagination metadata mismatch: requested page "+pageNo+" but API echoed "+parsed.pageNo);
