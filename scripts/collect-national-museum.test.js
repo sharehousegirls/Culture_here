@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fallbackPageRange, regionFromText, regionFromCoverage, regionWithSource, classifyHttpError, classifyNetworkError, classifyRequestError } from "./collect-national-museum.js";
+import { fallbackPageRange, regionFromText, regionFromCoverage, regionWithSource, classifyHttpError, classifyNetworkError, classifyRequestError, shouldRetryRequest } from "./collect-national-museum.js";
 
 test("fallback page ranges preserve raw offsets for 100 rows", () => {
   assert.deepEqual(fallbackPageRange(290000, 294499, 100), { firstPage: 2901, lastPage: 2945 });
@@ -41,6 +41,13 @@ test("HTTP errors are classified without confusing 500 assignment errors with 50
   assert.equal(classifyHttpError(504,"gateway timeout"),"API_GATEWAY_TIMEOUT");
   assert.equal(classifyHttpError(403,"forbidden"),"AUTH_OR_PERMISSION_ERROR");
   assert.equal(classifyHttpError(400,"invalid parameter"),"REQUEST_ERROR");
+  assert.equal(classifyHttpError(429,'{"message":"Quota exceeded ! You reach the limit of 1000 requests per 1 days"}'),"API_QUOTA_EXCEEDED");
+  assert.equal(classifyHttpError(429,"Too many requests"),"API_RATE_LIMITED");
+});
+test("daily API quota errors are not retried",()=>{
+  assert.equal(shouldRetryRequest({category:"API_QUOTA_EXCEEDED"}),false);
+  assert.equal(shouldRetryRequest({category:"API_RATE_LIMITED"}),true);
+  assert.equal(shouldRetryRequest(new Error("temporary server error")),true);
 });
 
 test("network errors distinguish DNS, connection, and timeout failures", () => {
