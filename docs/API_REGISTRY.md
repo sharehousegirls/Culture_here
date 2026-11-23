@@ -120,3 +120,15 @@ API metadata는 `config/apis.json`에서 관리한다. 보류 API는 `enabled: f
 - 다음 후보 문서 검토(호출/활성화 금지): 한국문화정보원 외_공연정보(통합), linked data 1437/API 597. 공식 Data.go 설명은 24개 표준 필드, 2024 snapshot 10개 기관, 23개 추가 자원 표준화 진행이라고 설명하지만, 10개라고 명시하면서 열거된 기관은 9개여서 기관 범위 수량 불일치. Culture Portal 상세 API 페이지는 접근 불가; endpoint/parameter/auth/현재 기관 목록은 미확인. 보류 상태 유지.
 - 다음 실행: API quota 회복 확인 후 NATIONAL_MUSEUM_API_KEY 대상만 재검증. 200/JSON/resultCode/totalCount/pagination/duplicates/missing fields/sample/regionSource를 확인; 실패하면 429 quota로 분류해 추가 호출 중단. 다른 API는 계속 disabled.
 - 사용자 조치: 현재는 키 교체/재발급 불필요. quota 회복 전 추가 실 호출을 피함. 비밀값은 기록하지 않음.
+
+
+## 실행 감사 — 2026-11-24 04:59 KST
+
+- 현재 main 최신 커밋은 `8b76cc6516739bb153aa60f434f83dbf9794c2ad` (2026-11-23 API quota retry audit)으로 확인. Collector, CI, Pages, pagination probe workflows, `config/apis.json`, `data/programs.json`, 직전 실행 감사 보고서를 재검토. Collector는 수동 실행 및 지정 경로 push trigger; API secret 존재 여부를 확인하고 키 값은 출력하지 않음. Actions workflow dispatch를 직접 호출할 수 있는 연결 도구가 없어서 기존 Collector run #15의 실패 job 재실행을 이용.
+- Collector #15 attempt 3 (https://github.com/sharehousegirls/Culture_here/actions/runs/45171773861) 실패 job rerun을 실제 수행. checkout/setup-node/Secret presence check 성공; API request 단계에서 `pageNo=1,numOfRows=1000` HTTP 429. 응답 메시지: `Quota exceeded ! You reach the limit of 1000 requests per 1 days`. 1회 요청 이후 Collector 중단; 데이터 검증, artifact, dataset commit, Pages deploy skip. secret 존재 확인은 성공하나 키 값은 노출하지 않음.
+- 실패 분류: 일일 quota 초과 `API_QUOTA_EXCEEDED` 확인. DNS/network, key missing, permission, request parameter, parsing 오류의 증거는 없음. HTTP 500 `From data is null at Assign!`는 quota에 의해 첫 요청이 차단되어 재현/분석 불가. 실 데이터 수 0; JSON record, sample, totalCount, pagination, 지역 분포/누락 필드 검증은 이번 실행에서 수행 불가.
+- Collector workflow 및 코드는 변경하지 않음. 429 quota 보호 로직이 추가 호출 없이 중단하는 것을 attempt 3에서 다시 확인. 기존 CI #56 (45210867754) 및 Pages #60 (45210867531)은 최신 commit 8b76cc65 기준 성공; 이번 감사 문서 push 이후 새 CI/Pages 결과는 별도 확인 필요.
+- 공식 Data.go API 페이지(https://www.data.go.kr/data/15105222/openapi.do)를 다시 열어 확인: 식별자 15105222, 문화체육관광부 제공, 국립중앙박물관과 13개 국립지방박물관 행사, JSON/XML, 실시간, 무료, 이용허락범위 제한 없음, 2025-08-20 수정. Endpoint `https://api.kcisa.kr/openapi/service/CNV/API_CNV_043/request` 및 `serviceKey,numOfRows,pageNo`는 현재 Collector와 이전 성공 run #11 근거; 공식 페이지에서 상세 endpoint/parameter 표는 이번에도 독립 확인되지 않음.
+- 기존 `data/programs.json`은 마지막 성공 Collector #11 snapshot (294,499 fetched/reported, 361 pages, 13,890 unique, 280,606 duplicates removed, 181 duplicate-page fingerprints, 12 published). 현재 지역 경북 2/대구 6/충북 4, missing region 0; fee/image missing 12/12. 주소가 박물관명인 기존 12건은 박물관 소속 지역 fallback; 실제 행사장 지역 분포로 해석하지 않으며 scope=unknown 유지. 이번 실행에서 새 데이터로 갱신하지 않음.
+- API_REGISTRY에 이 실행 기록만 추가. 다른 API는 호출/활성화하지 않으며 모두 보류. 성공 통합 전 다음 후보 조사 확장 없음.
+- 다음 실행: quota 회복 여부를 낮은 호출량으로 확인하고 HTTP 200/JSON/resultCode/totalCount/pagination, dedupe, missing fields, sample, regionSource를 확인. quota 초과 시 즉시 중단. HTTP 500 Assign-null은 실제 요청이 정상 통과하는 시점에 별도 검증. 사용자 조치: 키 재발급 불필요; quota 회복 전 API 호출을 피하고 대기.
