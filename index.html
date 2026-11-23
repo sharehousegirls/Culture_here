@@ -10,14 +10,14 @@
 <body>
   <header class="topbar">
     <a class="brand" href="./"><span class="brand-mark">C</span><span>Culture <b>Here</b></span></a>
-    <div class="topbar-right"><span class="region-pill"><span class="dot"></span> 전국 문화·교육 프로그램</span></div>
+    <div class="topbar-right"><span class="region-pill"><span class="dot"></span> 문화·교육 프로그램</span></div>
   </header>
   <main>
     <section class="hero">
       <div class="hero-inner">
         <p class="eyebrow">YOUR CULTURE, YOUR CITY</p>
         <h1>오늘, 가까운 곳에서<br><em>새로운 경험을</em> 발견하세요.</h1>
-        <p class="hero-copy">전국 도서관, 문화센터, 박물관 등에 흩어진 교육·문화 프로그램을 한곳에서 찾아보세요.</p>
+        <p class="hero-copy">연결된 기관의 프로그램을 한곳에서 찾고, 데이터가 확보된 지역부터 확인하세요.</p>
         <div class="search-wrap">
           <span class="search-icon" aria-hidden="true">⌕</span>
           <input id="keyword" type="search" placeholder="어떤 프로그램을 찾으세요? 예: 드로잉, AI, 독서" aria-label="프로그램 검색">
@@ -30,7 +30,7 @@
       <div class="section-heading"><div><p class="eyebrow dark">EXPLORE</p><h2>프로그램 둘러보기</h2><p class="muted">관심 있는 분야와 조건으로 찾아보세요.</p></div><div class="result-count" id="resultCount"></div></div>
       <div class="filter-bar">
         <label>분야<select id="category"><option value="">전체 분야</option><option>교육</option><option>문화예술</option><option>독서</option><option>체험</option><option>공연·전시</option><option>청소년</option></select></label>
-        <label>대상<select id="audience"><option value="">전체 대상</option><option>어린이</option><option>청소년</option><option>성인</option><option>가족</option><option>누구나</option></select></label>
+        <label>대상<select id="audience"><option value="">전체 대상</option><option>어린이</option><option>청소년</option><option>성인</option><option>가족</option><option>누구나</option><option>대상정보 없음</option></select></label>
         <label>비용<select id="fee"><option value="">전체</option><option value="무료">무료</option><option value="유료">유료</option></select></label>
         <label>시·도<select id="city"><option value="">전체 시·도</option></select></label><label>시·군·구<select id="district"><option value="">전체 시·군·구</option></select></label>
         <button id="reset" class="reset-button">초기화</button>
@@ -41,7 +41,7 @@
       <p class="demo-note">프로그램 정보는 연결된 공공 API에서 수집한 데이터입니다. 일정과 신청 정보는 원본 기관에서 확인하세요.</p>
     </section>
   </main>
-  <footer><div class="footer-brand">Culture Here</div><p>전국의 문화와 배움을 더 쉽게 발견하는 곳.</p><small>Prototype · 데이터 연동 준비 중</small></footer>
+  <footer><div class="footer-brand">Culture Here</div><p>전국의 문화와 배움을 더 쉽게 발견하는 곳.</p><small>실데이터 연동 · 일정과 신청은 원본 기관에서 확인하세요</small></footer>
   <dialog id="detailDialog"><button class="dialog-close" id="closeDialog" aria-label="닫기">×</button><div id="detailContent"></div></dialog>
   <script src="./app.js"></script>
 </body>
