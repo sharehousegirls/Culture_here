@@ -38,12 +38,12 @@
       "id": "national-museum-events",
       "name": "국립중앙박물관 외_국립지방박물관 문화행사 통합정보",
       "provider": "국립중앙박물관",
-      "status": "live-verified-integrated-awaiting-deployment",
+      "status": "live-verified-integrated-deployed",
       "scope": "unknown",
       "auth": "api-key",
       "secretName": "NATIONAL_MUSEUM_API_KEY",
       "enabled": true,
-      "notes": "Live collector validation on 2026-11-22: HTTP 200 JSON resultCode 0000; fetched 294499/294499 records and paginationComplete=true. 13890 unique records after 280606 duplicate removals (95.28%); 181 duplicate page fingerprints. 12 programs in 2026-10-23..2027-05-21 window; region distribution 경북 2, 대구 6, 충북 4, missing region 0. All 12 lack fee and image fields. Dataset successfully committed to main at 90662505bab9aa7746a1c96d161d2e503ee34bbf. Collector run failed only during Pages deployment after successful validation/artifact/push; publication to Pages still pending. Only this API is enabled."
+      "notes": "Latest successful live collector run #11 on 2026-11-23: 294499/294499 records fetched, paginationComplete=true, 361 pages. Tail recovery: 1000-row and 100-row requests at offset 291000 returned HTTP 504; 50-row fallback completed 70 pages/3499 records. 13890 unique records, 280606 duplicates removed (95.28%), 181 duplicate-page fingerprints. 12 programs in 2026-10-24..2027-05-22; region distribution 경북 2, 대구 6, 충북 4, missing region 0. Fee/image missing for all 12. Dataset committed and Pages deployed successfully; query scope remains unknown. Only this API enabled."
     },
     {
       "id": "national-library-recruitment",
@@ -55,6 +55,16 @@
       "secretName": "NATIONAL_LIBRARY_RECRUITMENT_API_KEY",
       "enabled": false,
       "notes": "Prior record includes region labels; verify API's actual query scope and response."
+    },
+    {
+      "id": "performance-info-integrated",
+      "name": "한국문화정보원 외_공연정보(통합)",
+      "provider": "한국문화정보원",
+      "status": "document-review-candidate",
+      "scope": "unknown",
+      "auth": "unknown",
+      "enabled": false,
+      "notes": "Official linked dataset ID 1437 and Culture Portal API ID 597. Official metadata describes 24 standardized fields, 10 institutions in the 2024 snapshot, with 23 additional resources being standardized. Endpoint, detailed parameters, authentication and current institution coverage remain unverified. Research only; do not call or activate."
     }
   ]
 }
