@@ -92,3 +92,17 @@ API metadata는 `config/apis.json`에서 관리한다. 보류 API는 `enabled: f
 - 테스트 commit `cb5c0dc`는 지역 출처 우선순위, 500/504/auth/request, network/DNS/timeout, parse/API/pagination 분류 4개 테스트를 추가. **이 새 commit에 대한 CI/Collector 실행 결과는 현재 connector에서 workflow run 목록을 읽을 수 없어 확인 불가**; 성공으로 기록하지 않음. Script 변경은 collector workflow의 push-path trigger에 해당함.
 - Pages run #51: attempt 1은 업로드 성공 후 deploy가 artifact 0개를 반환했고, 재실행 attempt 2는 같은 이름의 artifact 2개를 발견해 실패. 이는 job 재실행 시 `github-pages` 이름으로 artifact가 중복 생성되는 문제와 metadata 지연 가능성을 드러냄. Workflow commit `c28f7b51`에서 artifact 이름을 `github-pages-${{ github.run_attempt }}`로 분리하고 upload 후 10초 대기하도록 수정. 수정된 새 Pages run 결과는 조회할 수 없어 성공 여부 미확인.
 - 다음 후보 문서 조사: 한국문화정보원 외_공연정보(통합), 문화포털 API ID 597 / Data.go linked data ID 1437. 공식 linked-data 설명은 24개 표준 메타데이터, 10개 기관 및 23개 추가 자원 표준화 진행을 언급하지만, 기관 목록에 9개 이름만 열거되어 수량 불일치. Culture Portal 상세 API 페이지는 도구에서 접근 불가해 endpoint/parameter/auth/현재 기관 범위 미확인. **호출·키 사용·활성화 없이 후보로 유지.**
+
+
+## 실행 감사 — 2026-11-23 21:10 KST
+
+- 저장소 최신 main 확인: `f17b96807c516a36d6f4cefe1ce5e3a651dd8997`. Collector/CI/Pages workflow 및 직전 API_REGISTRY 감사 기록을 검토.
+- Collector run #14 (https://github.com/sharehousegirls/Culture_here/actions/runs/45134672954): 첫 요청 pageNo=1, numOfRows=1000에서 HTTP 429. 응답: 일일 1,000 요청 제한 초과. Secret 존재 확인 단계는 성공했으나 키 값은 출력하지 않음. 기존 collector는 같은 요청을 2회 시도했고 두 번 모두 429. 데이터 artifact, 정규화 검증, dataset commit, 배포 단계는 skip; 이번 run의 데이터 건수/응답형식/지역분포 검증 없음.
+- Collector run #13 (https://github.com/sharehousegirls/Culture_here/actions/runs/45110093024) 역시 첫 페이지 429. Run #12 (https://github.com/sharehousegirls/Culture_here/actions/runs/45109177218)는 291,000건까지 진행 후 tail HTTP 504; 100/50/25-row fallback은 429 quota 초과로 실패. 이 실패 실행들은 기존 dataset을 덮어쓰지 않음.
+- HTTP 429 일일 quota를 `API_QUOTA_EXCEEDED`로 분류하고, 이 유형에는 재시도하지 않도록 Collector 수정: https://github.com/sharehousegirls/Culture_here/commit/2010de6c7952dbcbd2aa9e68f0394c0d3c87e688. 일반 429는 `API_RATE_LIMITED`로 구분.
+- Unit test에 quota/generic-429 분류 및 재시도 정책 추가: https://github.com/sharehousegirls/Culture_here/commit/f17b96807c516a36d6f4cefe1ce5e3a651dd8997. 해당 CI는 감사 시점에 실행 중이었음.
+- Collector run #15 (https://github.com/sharehousegirls/Culture_here/actions/runs/45171773861)는 수정 후 push-triggered 실 호출에서 첫 페이지 429 quota 초과로 종료. 이번 run에서는 데이터 수집·검증·commit·deploy 없음. HTTP 500 `From data is null at Assign!` 재현 불가: quota가 첫 요청을 차단함.
+- CI #52 (https://github.com/sharehousegirls/Culture_here/actions/runs/45135060488) 및 Pages #56 (https://github.com/sharehousegirls/Culture_here/actions/runs/45135059979)은 이전 수정 상태에서 성공. 신규 코드 CI/Pages는 감사 시점에 진행 중 또는 대기.
+- 공식 Data.go 페이지 https://www.data.go.kr/data/15105222/openapi.do 는 국립중앙박물관과 전국 13개 국립지방박물관 행사 정보, JSON/XML, 실시간, 무료, 이용허락 제한 없음을 설명. 이번 공식 문서 열람 결과 endpoint/parameter 표는 확인되지 않았으며, endpoint 및 `serviceKey,numOfRows,pageNo` 조합은 Collector 설정과 이전 성공 run #11 기록에 근거. 이번 run의 HTTP status count/응답 레코드/지역 분포는 없음.
+- 다음 작업: API 제공기관 quota가 회복된 후 국립지방박물관 API만 다시 검증. 전체 pagination, 응답 형식, 데이터 총수, 중복, 필드 누락, 지역 출처를 확인하고 500 Assign-null 오류 재현 여부를 판단. API 성공 통합 전 다음 API 후보 호출/활성화 금지. 보류 API는 계속 disabled.
+- 사용자 조치: 키 교체/재발급 불필요. 제공기관의 일일 요청 한도 회복 전 API 수집 대기. 키/비밀 값은 저장소와 보고서에 포함하지 않음.
