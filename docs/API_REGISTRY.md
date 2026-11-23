@@ -82,3 +82,13 @@
 
 ## 운영
 API metadata는 `config/apis.json`에서 관리한다. 보류 API는 `enabled: false`로 유지하고, 한 번에 하나의 API만 실제 호출한다.
+
+## 실행 감사 — 2026-11-23 16:51 KST
+
+- 저장소 main의 최신 커밋: API 오류 진단/지역 출처 코드 변경(collector)과 해당 테스트 추가까지 확인.
+- 최신 **확인된 실 수집**은 Collector run #11 (2026-11-23 09:02~09:22 KST): HTTP 요청 성공, 294,499/294,499, 361 pages, 13,890 unique, 280,606 duplicates, 181 duplicate page fingerprints, 12개 프로그램 게시. 291,000 offset tail에서 1,000-row/100-row 요청이 HTTP 504, 50-row fallback 70페이지/3,499건으로 완료. 이 run은 최신 HTTP status instrumentation 이전이라 data 파일에 HTTP status count가 기록되지 않음.
+- data/programs.json 12건의 지역은 경북 2/대구 6/충북 4. **12건 모두 address가 박물관명으로 저장되어 지역은 행사 장소가 아닌 박물관 소속 지역 fallback 기반**임을 명시. 비용·이미지 누락 12/12. 이 분포를 전국 행사 장소 분포로 해석하지 않음.
+- 500 `From data is null at Assign!`는 이전 요청에서 관찰된 서버 내부 오류 메시지로, run #11에서는 재현되지 않음. 504와 구분. 최신 collector commit `13c8db13`는 HTTP 500 Assign-null, 일반 500, 504, 인증/권한, 요청, DNS/네트워크/timeout, 응답 parsing 오류 분류 및 pageNo/numOfRows/attempt 진단을 추가; 요청 URL/키는 로그하지 않고 response preview에서 키를 redaction. `regionSource`를 eventSite/spatialCoverage/museumAffiliation/unknown으로 기록.
+- 테스트 commit `cb5c0dc`는 지역 출처 우선순위, 500/504/auth/request, network/DNS/timeout, parse/API/pagination 분류 4개 테스트를 추가. **이 새 commit에 대한 CI/Collector 실행 결과는 현재 connector에서 workflow run 목록을 읽을 수 없어 확인 불가**; 성공으로 기록하지 않음. Script 변경은 collector workflow의 push-path trigger에 해당함.
+- Pages run #51: artifact upload는 성공했으나 deploy-pages가 동일 run에서 artifact metadata를 찾지 못해 실패. 실패 job 재실행은 요청했으며 attempt 2는 조회 당시 waiting. API collector 성공 여부와 별개이며 deployment 재검증 필요.
+- 다음 후보 문서 조사: 한국문화정보원 외_공연정보(통합), 문화포털 API ID 597 / Data.go linked data ID 1437. 공식 linked-data 설명은 24개 표준 메타데이터, 10개 기관 및 23개 추가 자원 표준화 진행을 언급하지만, 기관 목록에 9개 이름만 열거되어 수량 불일치. Culture Portal 상세 API 페이지는 도구에서 접근 불가해 endpoint/parameter/auth/현재 기관 범위 미확인. **호출·키 사용·활성화 없이 후보로 유지.**
