@@ -84,6 +84,15 @@ function regionFromCoverage(coverage,museum) {
   if(siteMuseumRegion) return siteMuseumRegion;
   return regionFromMuseumName(museum)||regionFromText(museum);
 }
+function regionWithSource(eventSite,spatialCoverage,museum) {
+  const eventRegion=regionFromText(eventSite)||regionFromMuseumName(eventSite);
+  if(eventRegion) return {region:eventRegion,regionSource:"eventSite"};
+  const coverageRegion=regionFromText(spatialCoverage)||regionFromMuseumName(spatialCoverage);
+  if(coverageRegion) return {region:coverageRegion,regionSource:"spatialCoverage"};
+  const museumRegion=regionFromMuseumName(museum)||regionFromText(museum);
+  if(museumRegion) return {region:museumRegion,regionSource:"museumAffiliation"};
+  return {region:"",regionSource:"unknown"};
+}
 function parsePeriod(period) {
   const matches = [...String(period || "").matchAll(/(20\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/g)];
   const format = m => {
@@ -98,12 +107,14 @@ function parsePeriod(period) {
 }
 function normalize(x) {
   const museum=x.creater||x.publisher||"", periodDates=parsePeriod(x.period||"");
-  const place=x.eventSite||x.spatialCoverage||museum;
+  const eventSite=x.eventSite||"", spatialCoverage=x.spatialCoverage||"";
+  const place=eventSite||spatialCoverage||museum;
+  const locationRegion=regionWithSource(eventSite,spatialCoverage,museum);
   const stableKey=x.localId||x.url||[x.title||"",museum,x.period||"",x.sourceAgency||"",x.collectedDate||""].join("|");
   const id=x.localId ? "museum-"+x.localId : "museum-"+createHash("sha1").update(stableKey).digest("hex");
   return {
     id,title:x.title||"",category:x.type||"박물관 문화행사",description:[x.description,x.subDescription].filter(Boolean).join("\n"),
-    organization:museum,region:regionFromCoverage(place,museum),district:"",address:place,latitude:null,longitude:null,
+    organization:museum,region:locationRegion.region,regionSource:locationRegion.regionSource,district:"",address:place,latitude:null,longitude:null,
     startDate:periodDates.startDate,endDate:periodDates.endDate,applicationStart:"",applicationEnd:"",
     fee:x.charge||"",imageUrl:x.imageObject||"",detailUrl:x.url||"",applicationUrl:"",
     sourceName:SOURCE,sourceId:String(stableKey),audience:x.audience||"",collectedAt:new Date().toISOString(),rawPeriod:x.period||"",
@@ -123,6 +134,37 @@ function recordHttpStatus(counts,status) {
   const key=String(status);
   counts.httpStatusCounts[key]=(counts.httpStatusCounts[key]||0)+1;
 }
+function classifyHttpError(status,body="") {
+  if(status===500&&/From data is null at Assign!/i.test(String(body))) return "API_INTERNAL_ASSIGNMENT_ERROR";
+  if(status===500) return "API_SERVER_ERROR";
+  if(status===504) return "API_GATEWAY_TIMEOUT";
+  if(status===401||status===403) return "AUTH_OR_PERMISSION_ERROR";
+  if(status>=400&&status<500) return "REQUEST_ERROR";
+  if(status>=500) return "API_SERVER_ERROR";
+  return "HTTP_ERROR";
+}
+function classifyNetworkError(error) {
+  const code=error?.cause?.code||error?.code||"";
+  if(code==="ENOTFOUND"||code==="EAI_AGAIN") return "DNS_ERROR";
+  if(["ECONNREFUSED","ECONNRESET","ECONNABORTED","EHOSTUNREACH","ENETUNREACH"].includes(code)) return "NETWORK_CONNECTION_ERROR";
+  if(code==="ETIMEDOUT"||error?.name==="TimeoutError"||error?.name==="AbortError") return "NETWORK_TIMEOUT";
+  return "NETWORK_OR_DNS_ERROR";
+}
+function classifyRequestError(error) {
+  if(error?.category) return error.category;
+  if(error instanceof SyntaxError) return "RESPONSE_PARSE_ERROR";
+  if(String(error?.message||"").startsWith("API result code")) return "API_RESPONSE_ERROR";
+  if(String(error?.message||"").startsWith("Pagination metadata mismatch")) return "REQUEST_PARAMETER_MISMATCH";
+  return classifyNetworkError(error);
+}
+function safePreview(value) {
+  let preview=String(value??"");
+  if(API_KEY) {
+    const secrets=[API_KEY,encodeURIComponent(API_KEY)];
+    for(const secret of secrets) if(secret) preview=preview.split(secret).join("[REDACTED]");
+  }
+  return preview.replace(/[\r\n\t]+/g," ").slice(0,250);
+}
 async function requestPage(pageNo,numOfRows,counts) {
   const url=new URL(ENDPOINT); url.searchParams.set("serviceKey",API_KEY); url.searchParams.set("numOfRows",String(numOfRows)); url.searchParams.set("pageNo",String(pageNo));
   let lastError;
@@ -131,7 +173,12 @@ async function requestPage(pageNo,numOfRows,counts) {
       const response=await fetch(url,{headers:{Accept:"application/json"},signal:AbortSignal.timeout(30000)});
       recordHttpStatus(counts,response.status);
       const text=await response.text();
-       if(!response.ok) throw new Error("HTTP "+response.status+" response: "+text.slice(0,250).replace(/[\r\n\t]+/g," "));
+      if(!response.ok) {
+        const category=classifyHttpError(response.status,text);
+        const error=new Error(category+" HTTP "+response.status+" pageNo="+pageNo+" numOfRows="+numOfRows+" response: "+safePreview(text));
+        error.category=category; error.httpStatus=response.status;
+        throw error;
+      }
       const parsed=parseResponse(text,response.headers.get("content-type")||"application/json");
       if(parsed.resultCode&&!["0000","INFO-0","00","0","NORMAL_CODE"].includes(String(parsed.resultCode))) throw new Error("API result code "+parsed.resultCode+": "+parsed.resultMsg);
       if(parsed.pageNo!==null&&parsed.pageNo!==pageNo) throw new Error("Pagination metadata mismatch: requested page "+pageNo+" but API echoed "+parsed.pageNo);
@@ -140,6 +187,7 @@ async function requestPage(pageNo,numOfRows,counts) {
       return {...parsed,httpStatus:response.status,contentType:response.headers.get("content-type")||"application/json"};
     } catch(error) {
       lastError=error;
+      console.warn("REQUEST ATTEMPT FAILED:",JSON.stringify({pageNo,numOfRows,attempt,category:classifyRequestError(error),httpStatus:error?.httpStatus??null,message:safePreview(error?.message||error)}));
       if(attempt<2) await new Promise(resolve=>setTimeout(resolve,1000));
     }
   }
@@ -252,7 +300,7 @@ async function main() {
   console.log("Missing fields:",JSON.stringify(missing));
   console.log("Sample record:",JSON.stringify(programs[0]?{title:programs[0].title,organization:programs[0].organization,region:programs[0].region,startDate:programs[0].startDate,endDate:programs[0].endDate,detailUrl:programs[0].detailUrl}:null));
 }
-export { fallbackPageRange, regionFromText, regionFromCoverage };
+export { fallbackPageRange, regionFromText, regionFromCoverage, regionWithSource, classifyHttpError, classifyNetworkError, classifyRequestError };
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   main().catch(error=>{console.error("API TEST FAILED:",error.message);process.exit(1);});
 }
