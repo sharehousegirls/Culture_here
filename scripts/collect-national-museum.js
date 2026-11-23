@@ -135,6 +135,8 @@ function recordHttpStatus(counts,status) {
   counts.httpStatusCounts[key]=(counts.httpStatusCounts[key]||0)+1;
 }
 function classifyHttpError(status,body="") {
+  if(status===429&&/quota exceeded|reach the limit of \d+\s+requests per \d+\s+days?/i.test(String(body))) return "API_QUOTA_EXCEEDED";
+  if(status===429) return "API_RATE_LIMITED";
   if(status===500&&/From data is null at Assign!/i.test(String(body))) return "API_INTERNAL_ASSIGNMENT_ERROR";
   if(status===500) return "API_SERVER_ERROR";
   if(status===504) return "API_GATEWAY_TIMEOUT";
@@ -142,6 +144,9 @@ function classifyHttpError(status,body="") {
   if(status>=400&&status<500) return "REQUEST_ERROR";
   if(status>=500) return "API_SERVER_ERROR";
   return "HTTP_ERROR";
+}
+function shouldRetryRequest(error) {
+  return error?.category !== "API_QUOTA_EXCEEDED";
 }
 function classifyNetworkError(error) {
   const code=error?.cause?.code||error?.code||"";
@@ -188,7 +193,8 @@ async function requestPage(pageNo,numOfRows,counts) {
     } catch(error) {
       lastError=error;
       console.warn("REQUEST ATTEMPT FAILED:",JSON.stringify({pageNo,numOfRows,attempt,category:classifyRequestError(error),httpStatus:error?.httpStatus??null,message:safePreview(error?.message||error)}));
-      if(attempt<2) await new Promise(resolve=>setTimeout(resolve,1000));
+      if(attempt<2&&shouldRetryRequest(error)) await new Promise(resolve=>setTimeout(resolve,1000));
+      else break;
     }
   }
   throw lastError;
@@ -300,7 +306,7 @@ async function main() {
   console.log("Missing fields:",JSON.stringify(missing));
   console.log("Sample record:",JSON.stringify(programs[0]?{title:programs[0].title,organization:programs[0].organization,region:programs[0].region,startDate:programs[0].startDate,endDate:programs[0].endDate,detailUrl:programs[0].detailUrl}:null));
 }
-export { fallbackPageRange, regionFromText, regionFromCoverage, regionWithSource, classifyHttpError, classifyNetworkError, classifyRequestError };
+export { fallbackPageRange, regionFromText, regionFromCoverage, regionWithSource, classifyHttpError, classifyNetworkError, classifyRequestError, shouldRetryRequest };
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   main().catch(error=>{console.error("API TEST FAILED:",error.message);process.exit(1);});
 }
