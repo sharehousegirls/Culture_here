@@ -117,12 +117,19 @@ function hashPage(items) {
 function dateShift(date, days) {
   const d=new Date(date+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+days); return d.toISOString().slice(0,10);
 }
-async function requestPage(pageNo,numOfRows) {
+function recordHttpStatus(counts,status) {
+  if(!counts) return;
+  counts.httpStatusCounts??={};
+  const key=String(status);
+  counts.httpStatusCounts[key]=(counts.httpStatusCounts[key]||0)+1;
+}
+async function requestPage(pageNo,numOfRows,counts) {
   const url=new URL(ENDPOINT); url.searchParams.set("serviceKey",API_KEY); url.searchParams.set("numOfRows",String(numOfRows)); url.searchParams.set("pageNo",String(pageNo));
   let lastError;
   for(let attempt=1;attempt<=2;attempt++) {
     try {
       const response=await fetch(url,{headers:{Accept:"application/json"},signal:AbortSignal.timeout(30000)});
+      recordHttpStatus(counts,response.status);
       const text=await response.text();
        if(!response.ok) throw new Error("HTTP "+response.status+" response: "+text.slice(0,250).replace(/[\r\n\t]+/g," "));
       const parsed=parseResponse(text,response.headers.get("content-type")||"application/json");
@@ -130,7 +137,7 @@ async function requestPage(pageNo,numOfRows) {
       if(parsed.pageNo!==null&&parsed.pageNo!==pageNo) throw new Error("Pagination metadata mismatch: requested page "+pageNo+" but API echoed "+parsed.pageNo);
       if(parsed.numOfRows!==null&&parsed.numOfRows!==numOfRows) throw new Error("Pagination metadata mismatch: requested numOfRows "+numOfRows+" but API echoed "+parsed.numOfRows);
       if(pageNo===1&&!parsed.items.length) throw new Error("Page 1 returned no item records.");
-      return {...parsed,contentType:response.headers.get("content-type")||"application/json"};
+      return {...parsed,httpStatus:response.status,contentType:response.headers.get("content-type")||"application/json"};
     } catch(error) {
       lastError=error;
       if(attempt<2) await new Promise(resolve=>setTimeout(resolve,1000));
@@ -152,13 +159,13 @@ function fallbackPageRange(offset,totalCount,pageSize) {
   if(offset%pageSize!==0) throw new Error("Fallback page size "+pageSize+" cannot align to offset "+offset+"; refusing to skip or overlap records.");
   return {firstPage:offset/pageSize+1,lastPage:Math.ceil(totalCount/pageSize)};
 }
-async function fetchFallbackTail(offset,totalCount) {
+async function fetchFallbackTail(offset,totalCount,counts) {
   const failures=[];
   for(const pageSize of [100,50,25]) {
     try {
       const range=fallbackPageRange(offset,totalCount,pageSize), pages=[];
       for(let pageNo=range.firstPage;pageNo<=range.lastPage;pageNo++) {
-        const page=await requestPage(pageNo,pageSize);
+        const page=await requestPage(pageNo,pageSize,counts);
         if(page.totalCount!==null&&page.totalCount!==totalCount) throw new Error("totalCount changed during fallback.");
         const expected=Math.min(pageSize,totalCount-(pageNo-1)*pageSize);
         if(page.items.length!==expected) throw new Error("Expected "+expected+" records at page "+pageNo+" but received "+page.items.length+".");
@@ -193,18 +200,18 @@ function processItems(items,counts,seen,programs,windowStart,windowEnd) {
 async function main() {
   if(!API_KEY) throw new Error("Missing GitHub secret NATIONAL_MUSEUM_API_KEY");
   const now=new Date(), today=now.toISOString().slice(0,10), windowStart=dateShift(today,-PAST_DAYS), windowEnd=dateShift(today,FUTURE_DAYS);
-  const counts={totalFetched:0,uniqueRecords:0,duplicatesRemoved:0,duplicatePages:0,missingTitle:0,unknownDate:0,outsideWindow:0,pagesFetched:0};
+  const counts={totalFetched:0,uniqueRecords:0,duplicatesRemoved:0,duplicatePages:0,missingTitle:0,unknownDate:0,outsideWindow:0,pagesFetched:0,httpStatusCounts:{}};
   const seen=new Set(), programs=[], fingerprints=new Map();
   let pageNo=1,totalCount=null,contentType="",paginationComplete=false;
   while(pageNo<=MAX_PAGES) {
     let page;
-    try { page=await requestPage(pageNo,PAGE_SIZE); }
+    try { page=await requestPage(pageNo,PAGE_SIZE,counts); }
     catch(error) {
       if(totalCount===null) throw error;
       const offset=(pageNo-1)*PAGE_SIZE;
       if(counts.totalFetched!==offset) throw new Error("Fallback offset mismatch: fetched "+counts.totalFetched+" rows but next page implies offset "+offset+". Original error: "+error.message);
       console.warn("Primary page failed; switching to smaller pages from raw offset",offset,error.message);
-      const tailPages=await fetchFallbackTail(offset,totalCount);
+      const tailPages=await fetchFallbackTail(offset,totalCount,counts);
       for(const tail of tailPages) {
         trackPage(tail.page,tail.pageNo,tail.pageSize,fingerprints,counts);
         counts.totalFetched+=tail.page.items.length; counts.pagesFetched++;
@@ -232,12 +239,14 @@ async function main() {
   if(totalCount!==null&&counts.totalFetched<totalCount) throw new Error("Pagination incomplete ("+counts.totalFetched+"/"+totalCount+"); dataset was not overwritten.");
   const regional=Object.fromEntries([...new Set(programs.map(p=>p.region||"지역미확인"))].map(r=>[r,programs.filter(p=>(p.region||"지역미확인")===r).length]));
   const missing=Object.fromEntries(["description","region","startDate","endDate","fee","imageUrl","detailUrl"].map(field=>[field,programs.filter(p=>!p[field]).length]));
-  const payload={generatedAt:now.toISOString(),source:SOURCE,endpoint:ENDPOINT,responseContentType:contentType,totalFetched:counts.totalFetched,reportedTotalCount:totalCount,paginationComplete:true,pagesFetched:counts.pagesFetched,uniqueRecords:counts.uniqueRecords,count:programs.length,duplicateRecordsRemoved:counts.duplicatesRemoved,duplicatePages:counts.duplicatePages,filterWindow:{startDate:windowStart,endDate:windowEnd,includeUnknownDates:false},filteredOut:{missingTitle:counts.missingTitle,unknownDate:counts.unknownDate,outsideWindow:counts.outsideWindow},regionalDistribution:regional,missingFields:missing,programs};
+  const payload={generatedAt:now.toISOString(),source:SOURCE,endpoint:ENDPOINT,responseContentType:contentType,totalFetched:counts.totalFetched,reportedTotalCount:totalCount,paginationComplete:true,pagesFetched:counts.pagesFetched,httpStatusCounts:counts.httpStatusCounts,uniqueRecords:counts.uniqueRecords,count:programs.length,duplicateRecordsRemoved:counts.duplicatesRemoved,duplicatePages:counts.duplicatePages,filterWindow:{startDate:windowStart,endDate:windowEnd,includeUnknownDates:false},filteredOut:{missingTitle:counts.missingTitle,unknownDate:counts.unknownDate,outsideWindow:counts.outsideWindow},regionalDistribution:regional,missingFields:missing,programs};
   const output=JSON.stringify(payload,null,2), outputBytes=Buffer.byteLength(output,"utf8");
   if(outputBytes>MAX_OUTPUT_BYTES) throw new Error("Filtered output size "+outputBytes+" exceeds safe 90 MiB limit; dataset was not overwritten.");
   await fs.mkdir("data",{recursive:true}); await fs.writeFile("data/programs.json",output);
   console.log("API TEST SUCCESS: full pagination",counts.totalFetched+"/"+(totalCount??"unknown"),"records; published",programs.length,"programs in date window",windowStart+".."+windowEnd,"duplicates removed",counts.duplicatesRemoved,"output bytes",outputBytes);
   console.log("Collection counts:",JSON.stringify(counts));
+  console.log("HTTP status counts:",JSON.stringify(counts.httpStatusCounts));
+  console.log("API response metadata:",JSON.stringify({contentType,reportedTotalCount:totalCount,paginationComplete}));
   console.log("Filtered out:",JSON.stringify(payload.filteredOut));
   console.log("Regional distribution:",JSON.stringify(regional));
   console.log("Missing fields:",JSON.stringify(missing));
