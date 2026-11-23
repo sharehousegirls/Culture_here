@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-11-22T20:01:33.170Z",
+  "generatedAt": "2026-11-23T00:02:14.570Z",
   "source": "국립지방박물관 문화행사 통합정보",
   "endpoint": "https://api.kcisa.kr/openapi/service/CNV/API_CNV_043/request",
   "responseContentType": "application/json; charset=utf-8",
   "totalFetched": 294499,
   "reportedTotalCount": 294499,
   "paginationComplete": true,
-  "pagesFetched": 326,
+  "pagesFetched": 361,
   "uniqueRecords": 13890,
   "count": 12,
   "duplicateRecordsRemoved": 280606,
   "duplicatePages": 181,
   "filterWindow": {
-    "startDate": "2026-10-23",
-    "endDate": "2027-05-21",
+    "startDate": "2026-10-24",
+    "endDate": "2027-05-22",
     "includeUnknownDates": false
   },
   "filteredOut": {
@@ -58,7 +58,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "311",
       "audience": "",
-      "collectedAt": "2026-11-22T20:01:44.189Z",
+      "collectedAt": "2026-11-23T00:02:24.394Z",
       "rawPeriod": "2026-06-24 ~ 2026-11-11 2026. 6. 24. ~ 11. 11.",
       "museumMetadata": {
         "publisher": "1371081",
@@ -89,7 +89,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "310",
       "audience": "",
-      "collectedAt": "2026-11-22T20:01:47.818Z",
+      "collectedAt": "2026-11-23T00:02:27.887Z",
       "rawPeriod": "2026-01-28 ~ 2026-12-30 2026. 1. 28. ~ 12. 30. 매월 마지막 주 수요일",
       "museumMetadata": {
         "publisher": "1371081",
@@ -120,7 +120,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "EDU_0000000000001074",
       "audience": "",
-      "collectedAt": "2026-11-22T20:01:58.114Z",
+      "collectedAt": "2026-11-23T00:02:37.374Z",
       "rawPeriod": "2026-10-15~2026-11-12",
       "museumMetadata": {
         "publisher": "1371085",
@@ -151,7 +151,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "EDU_0000000000001065",
       "audience": "",
-      "collectedAt": "2026-11-22T20:01:58.114Z",
+      "collectedAt": "2026-11-23T00:02:37.374Z",
       "rawPeriod": "2026-03-24~2026-11-26",
       "museumMetadata": {
         "publisher": "1371085",
@@ -182,7 +182,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "EDU_0000000000001066",
       "audience": "",
-      "collectedAt": "2026-11-22T20:01:58.114Z",
+      "collectedAt": "2026-11-23T00:02:37.374Z",
       "rawPeriod": "2026-03-18~2026-11-27",
       "museumMetadata": {
         "publisher": "1371085",
@@ -213,7 +213,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "EDU_0000000000001079",
       "audience": "",
-      "collectedAt": "2026-11-22T20:01:58.114Z",
+      "collectedAt": "2026-11-23T00:02:37.375Z",
       "rawPeriod": "2026-12-01~2026-12-10",
       "museumMetadata": {
         "publisher": "1371085",
@@ -244,7 +244,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "CLTUR_EVNT_0000000000001135",
       "audience": "",
-      "collectedAt": "2026-11-22T20:02:05.421Z",
+      "collectedAt": "2026-11-23T00:02:45.401Z",
       "rawPeriod": "2026-11-21~2026-11-21",
       "museumMetadata": {
         "publisher": "1371085",
@@ -275,7 +275,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "CLTUR_EVNT_0000000000001134",
       "audience": "",
-      "collectedAt": "2026-11-22T20:02:05.421Z",
+      "collectedAt": "2026-11-23T00:02:45.401Z",
       "rawPeriod": "2026-10-31~2026-10-31",
       "museumMetadata": {
         "publisher": "1371085",
@@ -306,7 +306,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "1052",
       "audience": "",
-      "collectedAt": "2026-11-22T20:12:47.498Z",
+      "collectedAt": "2026-11-23T00:13:57.457Z",
       "rawPeriod": "2026-04-18-2026-11-21 14:00~16:00",
       "museumMetadata": {
         "publisher": "1371086",
@@ -337,7 +337,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "1083",
       "audience": "",
-      "collectedAt": "2026-11-22T20:12:47.498Z",
+      "collectedAt": "2026-11-23T00:13:57.458Z",
       "rawPeriod": "2026-09-14-2026-10-30 ",
       "museumMetadata": {
         "publisher": "1371086",
@@ -368,7 +368,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "1088",
       "audience": "",
-      "collectedAt": "2026-11-22T20:12:47.498Z",
+      "collectedAt": "2026-11-23T00:13:57.458Z",
       "rawPeriod": "2026-11-21-2026-11-21 10:00~11:30",
       "museumMetadata": {
         "publisher": "1371086",
@@ -399,7 +399,7 @@
       "sourceName": "국립지방박물관 문화행사 통합정보",
       "sourceId": "1078",
       "audience": "",
-      "collectedAt": "2026-11-22T20:12:47.498Z",
+      "collectedAt": "2026-11-23T00:13:57.458Z",
       "rawPeriod": "2026-09-01-2026-10-27 14:00~16:00",
       "museumMetadata": {
         "publisher": "1371086",
