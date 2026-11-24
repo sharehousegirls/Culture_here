@@ -65,6 +65,17 @@
       "auth": "unknown",
       "enabled": false,
       "notes": "Official linked dataset ID 1437 and Culture Portal API ID 597. Official metadata describes 24 standardized fields, 10 institutions in the 2024 snapshot, with 23 additional resources being standardized. Endpoint, detailed parameters, authentication and current institution coverage remain unverified. Research only; do not call or activate."
+    },
+    {
+      "id": "national-performance-events",
+      "name": "전국 공연·행사 표준데이터",
+      "provider": "공공데이터포털",
+      "status": "live-verified-collector-pending",
+      "scope": "nationwide-unverified",
+      "auth": "api-key",
+      "secretName": "NATIONAL_PERFORMANCE_API_KEY",
+      "enabled": false,
+      "notes": "2026-11-24 test workflow verified HTTP 200, resultCode 00, NORMAL SERVICE, totalCount 10562, one sample record returned. Full pagination and field normalization not yet verified; keep disabled until collector validation."
     }
   ]
 }
