@@ -74,7 +74,7 @@ test("probe output redacts secrets before enforcing length limit", () => {
   assert.ok(output.endsWith("…"));
 });
 test("probe output normalizes whitespace and respects exact length limits", () => {
-  assert.equal(safeText(" first\\nsecond\\tthird ", 50), "first second third");
+  assert.equal(safeText(" first\nsecond\tthird ", 50), "first second third");
   assert.equal(safeText("abcdef", 4), "abc…");
   assert.equal(safeText("abcdef", 1), "…");
   assert.equal(safeText("abcdef", 0), "");
