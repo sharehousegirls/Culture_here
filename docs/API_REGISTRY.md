@@ -132,3 +132,18 @@ API metadata는 `config/apis.json`에서 관리한다. 보류 API는 `enabled: f
 - 기존 `data/programs.json`은 마지막 성공 Collector #11 snapshot (294,499 fetched/reported, 361 pages, 13,890 unique, 280,606 duplicates removed, 181 duplicate-page fingerprints, 12 published). 현재 지역 경북 2/대구 6/충북 4, missing region 0; fee/image missing 12/12. 주소가 박물관명인 기존 12건은 박물관 소속 지역 fallback; 실제 행사장 지역 분포로 해석하지 않으며 scope=unknown 유지. 이번 실행에서 새 데이터로 갱신하지 않음.
 - API_REGISTRY에 이 실행 기록만 추가. 다른 API는 호출/활성화하지 않으며 모두 보류. 성공 통합 전 다음 후보 조사 확장 없음.
 - 다음 실행: quota 회복 여부를 낮은 호출량으로 확인하고 HTTP 200/JSON/resultCode/totalCount/pagination, dedupe, missing fields, sample, regionSource를 확인. quota 초과 시 즉시 중단. HTTP 500 Assign-null은 실제 요청이 정상 통과하는 시점에 별도 검증. 사용자 조치: 키 재발급 불필요; quota 회복 전 API 호출을 피하고 대기.
+
+
+## 실행 감사 — 2026-11-24 12:55 KST
+
+- 최신 main 기준 데이터 커밋 확인: `ec302a21d396c1d02dfcd95e22b2ddf51eeefb43` (Update National Museum API dataset). 저장소, Collector/CI/Pages workflows, `config/apis.json`, `data/programs.json`, 직전 감사 기록을 재확인.
+- Museum Collector run #16 (https://github.com/sharehousegirls/Culture_here/actions/runs/45314978770)에서 Secret 존재 확인 성공(값은 노출하지 않음), API Fetch, normalized dataset validation, artifact, data commit까지 성공. 이번 실행은 이 API 하나만 호출; 다른 API는 이 운영에서 테스트/활성화하지 않음.
+- 실제 수집: JSON `application/json; charset=utf-8`; HTTP status counts `200: 362`, `504: 4` (총 366 요청 응답); reportedTotalCount=294,499, totalFetched=294,499, paginationComplete=true, pagesFetched=361. API quota 회복은 정상 200 응답으로 확인됨. 별도 추가 호출은 하지 않음.
+- 페이지 292, 1,000행 요청이 HTTP 504로 2회 실패; 100행 fallback (pageNo 2912)도 504로 2회 실패; 50행 fallback으로 tail 70페이지/3,499건을 복구. 429 quota, DNS/network, key/auth, request-format, parsing 오류는 이번 성공 실행에서 관찰되지 않음. HTTP 500 `From data is null at Assign!`는 재현되지 않음.
+- Dataset validation 성공: 13,890 unique records, 280,606 duplicates removed, 181 duplicate page fingerprints, 12 published programs, 12 unique program/source IDs, missing region=0, totalFetched와 reportedTotalCount 일치. 지역 분포 경북 2/대구 6/충북 4; 12/12 regionSource=`museumAffiliation`, address는 박물관명으로 행사장 위치와 동일하다고 검증되지 않음. 따라서 지역 분포는 기관 소속 fallback이며 행사장 분포로 해석하지 않고 scope=`unknown` 유지.
+- 12개 게시 프로그램 누락: description 0, region 0, startDate 0, endDate 0, fee 12, imageUrl 12, detailUrl 0. filterWindow 2026-10-25~2027-05-23; filteredOut missingTitle 3, unknownDate 6,710, outsideWindow 7,168. Sample: 2026 신라학 강좌 / 국립경주박물관 / 경북 / 2026-06-24~2026-11-11.
+- Dataset commit: https://github.com/sharehousegirls/Culture_here/commit/ec302a21d396c1d02dfcd95e22b2ddf51eeefb43. Collector job의 fetch/validation/archive/commit은 성공했으나 **같은 Collector workflow 내부 Pages deploy 단계는 실패**: artifact upload는 성공, deploy 단계에서 artifact metadata 조회 오류 및 `No artifacts named "github-pages"` 반환. 최신 dataset은 main에 커밋되어 기존 data는 덮어쓰기 없이 정상 갱신됨.
+- 별도 Pages run #69 (https://github.com/sharehousegirls/Culture_here/actions/runs/45315624273)는 성공했지만 head commit `1f41f26`로 dataset commit `ec302a21`보다 이전이므로 최신 dataset 배포를 확인한 것으로 간주하지 않음. 이번 audit-only 문서 commit은 Collector workflow trigger paths에 해당하지 않아 museum API를 재호출하지 않으며, Pages workflow가 최신 main dataset으로 배포되도록 trigger한다. 새 Pages/CI run은 commit 후 확인 예정.
+- 공식 Data.go API page https://www.data.go.kr/data/15105222/openapi.do: 문화체육관광부 제공, 국립중앙박물관 및 13개 국립지방박물관 문화행사, JSON/XML, 실시간, 무료. Endpoint 및 `serviceKey,numOfRows,pageNo` 조합은 Collector 설정과 실 성공 응답으로 검증했으나 공식 상세 parameter 표를 독립적으로 확인한 것은 아님.
+- 다음: audit-only push 후 CI 및 Pages run 확인. Pages deploy가 성공하면 최신 dataset 배포 확인; 실패하면 workflow artifact metadata 오류를 분리 진단. API quota 회복이 이미 full collector run으로 확인되었으므로 불필요한 실 API 호출은 하지 않음. 다음 API 후보 조사 모듈은 월요일에만 실행.
+- 사용자 조치: 현재 없음. 다른 API는 보류/disabled 유지.
