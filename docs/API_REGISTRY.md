@@ -147,3 +147,12 @@ API metadata는 `config/apis.json`에서 관리한다. 보류 API는 `enabled: f
 - 공식 Data.go API page https://www.data.go.kr/data/15105222/openapi.do: 문화체육관광부 제공, 국립중앙박물관 및 13개 국립지방박물관 문화행사, JSON/XML, 실시간, 무료. Endpoint 및 `serviceKey,numOfRows,pageNo` 조합은 Collector 설정과 실 성공 응답으로 검증했으나 공식 상세 parameter 표를 독립적으로 확인한 것은 아님.
 - 다음: audit-only push 후 CI 및 Pages run 확인. Pages deploy가 성공하면 최신 dataset 배포 확인; 실패하면 workflow artifact metadata 오류를 분리 진단. API quota 회복이 이미 full collector run으로 확인되었으므로 불필요한 실 API 호출은 하지 않음. 다음 API 후보 조사 모듈은 월요일에만 실행.
 - 사용자 조치: 현재 없음. 다른 API는 보류/disabled 유지.
+
+
+## 실행 후속 확인 — 2026-11-24 12:56 KST
+
+- 앞선 감사 commit `b107c80`에 의해 실행된 CI #66 (https://github.com/sharehousegirls/Culture_here/actions/runs/45323165425) 성공: Syntax check 및 Required files 단계 통과.
+- Pages #70 (https://github.com/sharehousegirls/Culture_here/actions/runs/45323165462) 성공. Deploy payload의 `pages_build_version`는 `b107c80afddc0000adfff552ce93e707d53ed34e`로 확인. 이 commit의 부모는 최신 데이터 commit `ec302a21d396c1d02dfcd95e22b2ddf51eeefb43`이므로, 최신 museum dataset을 포함한 사이트 배포가 확인됨.
+- Collector run #16의 수집/정규화 검증/데이터 artifact/commit은 성공. 해당 collector job은 내장 Pages deploy에서 artifact metadata 조회 실패로 job conclusion이 failure였지만, 별도 Pages workflow #70이 최신 데이터 포함 commit을 성공적으로 배포하여 배포 장애는 복구됨.
+- 이 후속 감사 commit은 문서만 변경하며 Collector trigger paths에 포함되지 않음. 다른 API 호출/활성화는 하지 않음. Module B 신규 API 조사는 월요일에만 수행하므로 오늘(화요일)은 생략.
+- 사용자 조치: 없음.
