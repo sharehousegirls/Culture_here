@@ -1,3 +1,5 @@
+import { safeText } from "./probe-utils.js";
+
 const API_KEY = process.env.NATIONAL_MUSEUM_API_KEY;
 const ENDPOINT = "https://api.kcisa.kr/openapi/service/CNV/API_CNV_043/request";
 const PAGE_NO = 1;
@@ -5,8 +7,7 @@ const ROWS = 1;
 const ACCEPTED_CODES = new Set(["00", "0000", "INFO-0", "0", "NORMAL_CODE"]);
 
 function safe(value, limit = 180) {
-  const text = String(value ?? "").replace(/[\\r\\n\\t]+/g, " ").trim();
-  return API_KEY ? text.replaceAll(API_KEY, "[REDACTED]") : text;
+  return safeText(value, limit, API_KEY);
 }
 function getItems(json) {
   const root = json?.response ?? json;

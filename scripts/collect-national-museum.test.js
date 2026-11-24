@@ -1,4 +1,5 @@
 import test from "node:test";
+import { safeText } from "./probe-utils.js";
 import assert from "node:assert/strict";
 import { fallbackPageRange, regionFromText, regionFromCoverage, regionWithSource, classifyHttpError, classifyNetworkError, classifyRequestError, shouldRetryRequest } from "./collect-national-museum.js";
 
@@ -62,4 +63,19 @@ test("API and pagination errors are classified separately from network errors", 
   assert.equal(classifyRequestError(new Error("API result code 10: bad request")),"API_RESPONSE_ERROR");
   assert.equal(classifyRequestError(new Error("Pagination metadata mismatch")),"REQUEST_PARAMETER_MISMATCH");
   assert.equal(classifyRequestError(new SyntaxError("invalid json")),"RESPONSE_PARSE_ERROR");
+});
+
+test("probe output redacts secrets before enforcing length limit", () => {
+  const secret = "private-api-key-value";
+  const output = safeText("response " + secret + " " + "x".repeat(100), 40, secret);
+  assert.ok(!output.includes(secret));
+  assert.ok(output.includes("[REDACTED]"));
+  assert.ok(output.length <= 40);
+  assert.ok(output.endsWith("…"));
+});
+test("probe output normalizes whitespace and respects exact length limits", () => {
+  assert.equal(safeText(" first\\nsecond\\tthird ", 50), "first second third");
+  assert.equal(safeText("abcdef", 4), "abc…");
+  assert.equal(safeText("abcdef", 1), "…");
+  assert.equal(safeText("abcdef", 0), "");
 });

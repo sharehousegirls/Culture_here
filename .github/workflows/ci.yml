@@ -18,6 +18,8 @@ jobs:
           node --check app.js
           node --check scripts/collect-culture-portal.js
           node --check scripts/collect-national-museum.js
+          node --check scripts/probe-national-museum-pagination.js
+          node --check scripts/probe-utils.js
           node --test scripts/collect-national-museum.test.js
       - name: Required files
         run: |
