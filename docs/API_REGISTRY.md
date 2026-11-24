@@ -156,3 +156,16 @@ API metadata는 `config/apis.json`에서 관리한다. 보류 API는 `enabled: f
 - Collector run #16의 수집/정규화 검증/데이터 artifact/commit은 성공. 해당 collector job은 내장 Pages deploy에서 artifact metadata 조회 실패로 job conclusion이 failure였지만, 별도 Pages workflow #70이 최신 데이터 포함 commit을 성공적으로 배포하여 배포 장애는 복구됨.
 - 이 후속 감사 commit은 문서만 변경하며 Collector trigger paths에 포함되지 않음. 다른 API 호출/활성화는 하지 않음. Module B 신규 API 조사는 월요일에만 수행하므로 오늘(화요일)은 생략.
 - 사용자 조치: 없음.
+
+
+## 운영 감사 — 2026-11-25 00:55 KST
+
+- 저장소 최신 상태를 확인: main의 이전 최신 커밋은 `03bd8afa267e4f05a24c65290513ef7ccfcd639f`; 데이터/Collector/CI/Pages/probe workflow와 직전 감사 기록을 검토. 최근 전체 수집은 Collector #16 (2026-11-24)이며 데이터 검증·commit 성공, workflow 내부 Pages deploy 단계 실패. 별도 Pages #71은 최신 데이터 commit을 포함한 버전으로 성공. 이번 run에서 full collector는 실행하지 않아 기존 데이터 변경 없음.
+- 안전한 상태 probe를 위해 기존 pagination probe(19 requests)를 `pageNo=1,numOfRows=1`의 단일 요청으로 축소. 코드 commit `28f7e1d9ac20f27356b0f76a23513767a65b0bd0`. API key 및 요청 URL은 출력하지 않음. 한 요청만 수행, 재시도 없음.
+- Probe run #4 https://github.com/sharehousegirls/Culture_here/actions/runs/45431698717 성공. HTTP 200, JSON content type, 1 item, response bytes 1860, elapsed 5371ms. API metadata: resultCode=0000, resultMsg=OK, totalCount=294499, pageNo=1, numOfRows=1. Sample: 조이 오브 스트링스 / 국립중앙박물관 / 2017-06-17; eventSite empty. 이 오래된 sample은 API 응답·구조·quota 접근 가능성 확인용이며 최신 행사 데이터의 freshness를 보증하지 않음. quota가 차단된 상태가 아님을 확인했지만 잔여 quota 수량은 미확인. 지역은 sample eventSite가 비어 있어 unknown; 기존 12 records의 지역은 museumAffiliation fallback으로 행사장 실제 지역을 의미하지 않음.
+- Probe script `safe(value, limit)`의 현재 length parameter가 실제 truncation에 적용되지 않는 점을 발견. API key replacement는 적용되고 이번 로그에서 키/요청 URL은 노출되지 않았으나, 출력 길이 제한은 다음 코드 개선 대상으로 기록. 현재 probe는 1-request로 유지; 이 수정은 다음 실행에서 CI와 1-request probe로 검증.
+- Push-triggered CI #68? actual run id 45431698845 https://github.com/sharehousegirls/Culture_here/actions/runs/45431698845 성공. Pages #72 https://github.com/sharehousegirls/Culture_here/actions/runs/45431698550 성공. Pages deploy는 commit `28f7e1d9` 기준 완료; 기존 dataset은 `03bd8afa` snapshot을 포함하며 최신 API data refresh는 하지 않음.
+- API current status/quota: 단일 HTTP 200으로 현재 요청 가능 상태 확인. quota 잔여량을 추정하지 않으며 추가 API 호출 없음. HTTP 500 `From data is null at Assign!`는 이번 probe에서 재현되지 않음.
+- Module B: 오늘은 수요일, 신규 API 후보 조사 미실행. 기존 다른 API는 이번 run에서 호출/활성화하지 않음; 모두 보류 유지.
+- 사용자 조치: 없음. 정상 상태 및 개선 기록만으로 이메일 발송하지 않음.
+- 다음 실행: 최신 main/report를 다시 확인하고 probe 출력 길이 제한을 수정한 뒤 단일 요청만 수행. API 200/JSON/resultCode/item/totalCount 확인; quota error면 즉시 중단. 데이터 refresh는 필요한 경우 별도 승인 없이 full collection을 반복하지 않음.
