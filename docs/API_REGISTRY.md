@@ -169,3 +169,17 @@ API metadata는 `config/apis.json`에서 관리한다. 보류 API는 `enabled: f
 - Module B: 오늘은 수요일, 신규 API 후보 조사 미실행. 기존 다른 API는 이번 run에서 호출/활성화하지 않음; 모두 보류 유지.
 - 사용자 조치: 없음. 정상 상태 및 개선 기록만으로 이메일 발송하지 않음.
 - 다음 실행: 최신 main/report를 다시 확인하고 probe 출력 길이 제한을 수정한 뒤 단일 요청만 수행. API 200/JSON/resultCode/item/totalCount 확인; quota error면 즉시 중단. 데이터 refresh는 필요한 경우 별도 승인 없이 full collection을 반복하지 않음.
+
+
+## 운영 감사 — 2026-11-25 04:59 KST
+
+- main 최신 상태 및 이전 감사/데이터/Collector/CI/Pages/probe workflow를 재확인. 최신 데이터는 Collector #16 성공 기록(294,499/294,499; 361 pages; 13,890 unique; 12 published)이며 이번 run에서는 전체 수집을 하지 않아 기존 데이터 유지.
+- Probe #5 (https://github.com/sharehousegirls/Culture_here/actions/runs/45475687312): 1회 제한 요청 성공. HTTP 200, JSON, resultCode=0000/OK, 1 item, totalCount=294,499, pageNo=1, numOfRows=1, response 1,860 bytes, elapsed 5.4s. Sample은 2017-06-17 행사로 최신성 확인 목적이 아닌 연결/응답 검증용. 잔여 quota 수량은 확인 불가. #5는 helper 수정 전 코드였으나 API key와 URL은 로그에 출력되지 않았음.
+- Probe 출력의 길이 제한이 실제 적용되지 않는 문제를 발견. Commit 321245947fc64f44a7d621c1092881b7c68b9194에서 helper 분리, 비밀값 마스킹 후 길이 제한, probe/helper syntax checks, 2개 unit test 추가. CI #71은 초기 helper의 whitespace 정규식 오작성으로 2개 테스트 실패; 외부 API/데이터 문제는 아님.
+- Commit a57cfb5442e76e50719bda8389bc4ee827ee47c에서 whitespace regex와 테스트 입력 escape를 수정. CI #72 성공(14 tests pass, 0 fail), Pages #76 성공. 
+- Commit c03193a20048a455a09ef52a28f04551ac1cbd43에서 probe 입력 길이 상한을 180자 이하로 강제. Probe #6 (https://github.com/sharehousegirls/Culture_here/actions/runs/45475968461) corrected helper로 1회 요청 성공: HTTP 200, JSON, resultCode=0000/OK, item=1, totalCount=294,499, 2.54s. Sample 동일한 오래된 행사, eventSite 비어 있음; 지역은 행사장 미확인으로 unknown. 500 Assign-null 재현되지 않음. 
+- CI #73 https://github.com/sharehousegirls/Culture_here/actions/runs/45475968642 성공; Pages #77 https://github.com/sharehousegirls/Culture_here/actions/runs/45475968471 성공. #71 test failure는 #72에서 복구, 최신 commit 기준 CI/Pages 모두 성공.
+- API 상태: 단일 제한 probe에서 정상 응답; 현재 quota 차단은 관찰되지 않았으나 잔여 quota 수량은 미확인. full collector 재실행/데이터 갱신은 하지 않음. 
+- 기존 API 외 다른 API 호출/활성화 없음. 오늘 수요일이므로 Module B 신규 후보 조사 미실시.
+- 사용자 조치: 없음. 이메일 발송하지 않음.
+- 다음: 최신 main/report 확인; 단일 요청 probe 유지; quota 오류면 즉시 중단. 실제 데이터 갱신은 필요성과 요청량을 별도로 검토한 뒤 진행.
