@@ -83,3 +83,8 @@ Collector workflow는 수동 실행 및 지정 경로의 변경으로 실행됩�
 - 키는 GitHub Actions Secrets 또는 로컬 환경변수로 관리합니다.
 - Collector 로그에 인증키와 전체 요청 URL을 노출하지 않습니다.
 - 공개 API 데이터는 원본 기관의 정확성·최신성에 한계가 있을 수 있으므로 상세 정보 및 신청 여부는 원본 기관에서 확인하도록 안내합니다.
+
+
+## 신규 API 추가 표준 절차
+
+신규 API 등록 시 연결 검증부터 수집·오류 수정·데이터 검증·서비스 통합·배포까지 진행하는 표준 절차는 [`docs/API_ADD_WORKFLOW.md`](docs/API_ADD_WORKFLOW.md)를 따릅니다. ChatGPT 내부 메모에만 의존하지 않도록 저장소에 운영 기준을 백업했습니다.
