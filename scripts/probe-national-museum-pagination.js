@@ -7,7 +7,7 @@ const ROWS = 1;
 const ACCEPTED_CODES = new Set(["00", "0000", "INFO-0", "0", "NORMAL_CODE"]);
 
 function safe(value, limit = 180) {
-  return safeText(value, limit, API_KEY);
+  return safeText(value, Math.min(limit, 180), API_KEY);
 }
 function getItems(json) {
   const root = json?.response ?? json;
