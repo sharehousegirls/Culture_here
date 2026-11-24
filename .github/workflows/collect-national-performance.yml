@@ -1,0 +1,29 @@
+name: Collect National Performance Events
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate collector syntax
+        run: node --check scripts/collect-national-performance.js
+      - name: Collect national performance events
+        env:
+          NATIONAL_PERFORMANCE_API_KEY: ${{ secrets.NATIONAL_PERFORMANCE_API_KEY }}
+        run: node scripts/collect-national-performance.js
+      - name: Upload dataset for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: national-performance-events-${{ github.run_id }}
+          path: data/performance-events.json
+          if-no-files-found: error
+          retention-days: 7
